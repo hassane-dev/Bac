@@ -143,6 +143,63 @@ abstract class Controller {
         echo json_encode($data);
         exit;
     }
+
+    /**
+     * Vérifie si un utilisateur est connecté.
+     * @return bool
+     */
+    protected function isLoggedIn() {
+        return isset($_SESSION['user_id']);
+    }
+
+    /**
+     * Vérifie si l'utilisateur connecté a une accréditation spécifique.
+     * Cette méthode devra être complétée avec la logique de récupération des accréditations de l'utilisateur.
+     * @param string $requiredAccreditation Le libellé de l'accréditation requise.
+     * @return bool
+     */
+    protected function userHasPermission($requiredAccreditation) {
+        if (!$this->isLoggedIn()) {
+            return false;
+        }
+
+        // Logique simplifiée pour l'instant: L'admin (role_id 1) a toutes les permissions.
+        if (isset($_SESSION['user_role_id']) && $_SESSION['user_role_id'] == 1) { // Supposant que l'ID 1 est pour l'Administrateur
+            return true;
+        }
+
+        // Logique plus complète à implémenter:
+        // 1. Récupérer les accréditations associées au rôle de l'utilisateur (stockées en session lors du login).
+        // $userAccreditations = $_SESSION['user_accreditations'] ?? [];
+        // return in_array($requiredAccreditation, $userAccreditations);
+
+        // Pour l'instant, pour les non-admins, on refuse par défaut si ce n'est pas l'admin.
+        // Cela devra être adapté une fois la gestion fine des accréditations en place.
+        // Pour des tests initiaux, on peut permettre certaines actions si on est loggué
+        // if ($requiredAccreditation === 'view_dashboard' && $this->isLoggedIn()) return true;
+
+        // Si vous voulez une permission spécifique pour le dashboard pour tout utilisateur connecté:
+        if ($requiredAccreditation === 'access_dashboard') {
+            return true; // Tout utilisateur connecté peut accéder au dashboard
+        }
+
+
+        // Pour les autres permissions, charger les accréditations de l'utilisateur depuis la session
+        // (elles devraient y être stockées après une connexion réussie)
+        $userAccreditations = [];
+        if (isset($_SESSION['user_role_id'])) {
+            // Ceci est une solution temporaire. Idéalement, les accréditations sont chargées une fois au login.
+            $roleModel = $this->model('Role'); // Assurez-vous que le modèle Role est accessible
+            if ($roleModel) {
+                $accreditationsObjects = $roleModel->getAccreditations($_SESSION['user_role_id']);
+                $userAccreditations = array_map(function($acc) { return $acc->libelle_action; }, $accreditationsObjects);
+                // Stocker en session pour éviter de requêter à chaque fois (optionnel mais recommandé)
+                // $_SESSION['user_accreditations'] = $userAccreditations;
+            }
+        }
+
+        return in_array($requiredAccreditation, $userAccreditations);
+    }
 }
 
 // Création d'un HomeController basique maintenant que Controller.php existe.
@@ -153,19 +210,15 @@ if (!file_exists(APP_ROOT . '/app/controllers/HomeController.php')) {
     $homeControllerContent .= "class HomeController extends Controller {\n";
     $homeControllerContent .= "    public function __construct() {\n";
     $homeControllerContent .= "        parent::__construct();\n";
-    $homeControllerContent .= "        // Exemple: Charger un modèle si nécessaire\n";
-    $homeControllerContent .= "        // \$this->userModel = \$this->model('User');\n";
     $homeControllerContent .= "    }\n\n";
     $homeControllerContent .= "    public function index() {\n";
-    $homeControllerContent .= "        \$data = [\n";
-    $homeControllerContent .= "            'title' => \$this->translate('welcome_title'),\n";
-    $homeControllerContent .= "            'message' => \$this->translate('welcome_message', ['appName' => 'BacAppMVC'])\n";
-    $homeControllerContent .= "        ];\n";
-    $homeControllerContent .= "        \$this->view('home/index', \$data); // Sera utilisé quand la vue home/index existera\n";
-    $homeControllerContent .= "        // Pour l'instant, affichage direct pour test\n";
-    $homeControllerContent .= "        // echo \"<h1>{\$data['title']}</h1><p>{\$data['message']}</p>\";\n";
-    $homeControllerContent .= "        // echo \"<p>Langue actuelle: {$_SESSION['lang']}</p>\";\n";
-    $homeControllerContent .= "        // echo '<p><a href=\"?lang=fr\">Français</a> | <a href=\"?lang=ar\">Arabe</a></p>';\n";
+    $homeControllerContent .= "        // Si l'utilisateur est connecté, rediriger vers le tableau de bord\n";
+    $homeControllerContent .= "        if (\$this->isLoggedIn()) {\n";
+    $homeControllerContent .= "            \$this->redirect('dashboard');\n";
+    $homeControllerContent .= "        } else {\n";
+    $homeControllerContent .= "            // Sinon, rediriger vers la page de connexion\n";
+    $homeControllerContent .= "            \$this->redirect('auth/login');\n";
+    $homeControllerContent .= "        }\n";
     $homeControllerContent .= "    }\n";
     $homeControllerContent .= "}\n";
 

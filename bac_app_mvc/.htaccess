@@ -1,7 +1,45 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Rediriger tout le trafic vers le dossier public
+  # Rediriger tout le trafic qui n'est pas déjà dans /public/ vers le dossier public/
+  # Sauf si c'est une requête pour un fichier ou dossier existant à la racine (peu probable pour cette app)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteRule ^(.*)$ public/$1 [L,QSA]
+
+  # Si la requête est pour la racine et n'a pas été redirigée vers public (au cas où la condition ci-dessus ne matche pas)
+  # et que public/index.php existe, alors rediriger vers public/
+  # Ceci est une sécurité supplémentaire.
+  RewriteCond %{REQUEST_URI} ^/$
+  RewriteCond %{DOCUMENT_ROOT}/public/index.php -f
+  RewriteRule ^$ public/ [L]
+
+</IfModule>
+
+# Empêcher le listage des répertoires si DirectoryIndex n'est pas trouvé
+Options -Indexes
+
+# Empêcher l'accès direct aux fichiers sensibles
+<FilesMatch "\.(sql|env|log|ini|bak|config|md)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+<Files ".env">
+    Order Allow,Deny
+    Deny from all
+</Files>
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+<Files "bac_app.sql">
+    Order Allow,Deny
+    Deny from all
+</Files>
+<FilesMatch "^(Controller\.php|Database\.php|Router\.php|View\.php)$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_autoindex.c>
+    IndexIgnore .git* .env bac_app.sql config.php
 </IfModule>

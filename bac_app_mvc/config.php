@@ -2,27 +2,40 @@
 
 // Configuration de la base de données
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'bac_app'); // Nom de la base de données comme spécifié dans bac_app.sql
-define('DB_USER', 'root');    // Utilisateur par défaut pour XAMPP/Laragon
-define('DB_PASS', '');        // Mot de passe par défaut pour XAMPP/Laragon
+define('DB_NAME', 'bac_app');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 // Racine de l'application
-// Utile pour construire des URLs absolues et des chemins de fichiers.
-// Détecte automatiquement si l'application est dans un sous-dossier.
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $host = $_SERVER['HTTP_HOST'];
-$script_name = $_SERVER['SCRIPT_NAME']; // ex: /bac_app_mvc/public/index.php
+// SCRIPT_NAME est le chemin du script actuel (index.php dans le dossier public)
+// Pour obtenir la base de l'URL de l'application, nous devons retirer '/public/index.php' ou juste '/index.php' si à la racine du docroot
+// et ensuite retirer '/public' si l'application est servie depuis bac_app_mvc/public/
+// La configuration .htaccess à la racine de bac_app_mvc redirige vers public/,
+// donc SCRIPT_NAME pourrait être /bac_app_mvc/public/index.php ou /public/index.php si bac_app_mvc est le docroot.
 
-// Retire /public/index.php pour obtenir la base de l'URL de l'application
-$app_base_path = str_replace('/public/index.php', '', $script_name);
-define('APP_URL', $protocol . $host . $app_base_path);
+// Chemin de base de l'application URL-wise.
+// Si l'application est à la racine du serveur (ex: http://localhost/public/index.php), SCRIPT_NAME est /index.php (après redirection vers public)
+// Si l'application est dans un sous-dossier (ex: http://localhost/mon_projet/public/index.php), SCRIPT_NAME est /mon_projet/public/index.php
+// Nous voulons que APP_URL soit http://localhost/ ou http://localhost/mon_projet/
+$app_path = dirname($_SERVER['SCRIPT_NAME']); // Devrait donner /bac_app_mvc/public ou /public
+if ($app_path === '/public' || substr($app_path, -7) === '/public') {
+    $app_path = substr($app_path, 0, -6); // Retire /public pour obtenir la base de l'application
+}
+if ($app_path === '\\' || $app_path === '/') { // Si à la racine du serveur web
+    $app_path = '';
+}
 
-// Chemin absolu vers la racine du projet sur le serveur
-define('APP_ROOT', dirname(__FILE__));
+define('APP_URL', $protocol . $host . $app_path);
+
+
+// Chemin absolu vers la racine du projet sur le serveur (bac_app_mvc)
+define('APP_ROOT', dirname(__DIR__)); // dirname(__FILE__) dans config.php, puis dirname() pour remonter d'un niveau
 
 // Paramètres linguistiques par défaut
 define('DEFAULT_LANG', 'fr');
-define('AVAILABLE_LANGS', ['fr', 'ar']);
+define('AVAILABLE_LANGS', ['fr', 'ar']); // Doit correspondre aux noms de fichiers dans /lang sans .php
 
 // Affichage des erreurs (à mettre à false en production)
 define('SHOW_ERRORS', true);

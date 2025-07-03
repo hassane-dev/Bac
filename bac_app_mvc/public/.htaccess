@@ -1,19 +1,21 @@
 <IfModule mod_rewrite.c>
+  Options -Multiviews
   RewriteEngine On
 
-  # S'assurer que la requête n'est pas pour un fichier ou dossier existant
+  # S'assurer que la requête n'est pas pour un fichier ou dossier existant dans public/
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
 
-  # Rediriger toutes les autres requêtes vers index.php
+  # Rediriger toutes les autres requêtes vers index.php avec le paramètre 'url'
   RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 </IfModule>
 
 # Empêcher le listage des répertoires
 Options -Indexes
 
-# Sécurité : Interdire l'accès direct à certains fichiers sensibles si placés ici par erreur
-<FilesMatch "\.(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$">
-  Order Allow,Deny
-  Deny from all
+# Mesures de sécurité supplémentaires
+<FilesMatch "\.(php|phtml)$">
+  # S'assurer que seul index.php est directement accessible si besoin,
+  # mais le routeur est censé gérer cela.
+  # Pour une sécurité accrue, on pourrait restreindre davantage.
 </FilesMatch>

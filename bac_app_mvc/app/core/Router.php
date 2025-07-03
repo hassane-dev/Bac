@@ -1,9 +1,9 @@
 <?php
 
 class Router {
-    protected $currentController = 'HomeController';
-    protected $currentMethod = 'index';
-    protected $params = [];
+    protected $currentController = 'HomeController'; // Contrôleur par défaut
+    protected $currentMethod = 'index';       // Méthode par défaut
+    protected $params = [];                   // Paramètres de l'URL
 
     public function __construct() {
         // Le constructeur est vide, l'analyse de l'URL et le dispatching se font dans la méthode dispatch.
@@ -32,6 +32,7 @@ class Router {
         // $url[0] correspond au nom du contrôleur (ex: 'roles' pour 'RolesController')
         if (!empty($url[0])) {
             $controllerName = ucwords(strtolower($url[0])) . 'Controller';
+            // Utiliser APP_ROOT défini dans config.php pour le chemin des fichiers
             $controllerFile = APP_ROOT . '/app/controllers/' . $controllerName . '.php';
 
             if (file_exists($controllerFile)) {
@@ -45,7 +46,7 @@ class Router {
         } else {
             // Pas de contrôleur dans l'URL, on utilise HomeController par défaut
             $controllerFile = APP_ROOT . '/app/controllers/' . $this->currentController . '.php';
-            if (!file_exists($controllerFile)) {
+             if (!file_exists($controllerFile)) {
                  $this->serve404("Contrôleur par défaut '{$this->currentController}' non trouvé.");
                  return;
             }
@@ -106,7 +107,4 @@ class Router {
         // exit(); // Important pour arrêter l'exécution du script après une erreur 404
     }
 }
-
-// Le HomeController est maintenant créé par Controller.php lors de son initialisation (s'il n'existe pas).
-// Il n'est plus nécessaire de le créer explicitement ici.
 ?>

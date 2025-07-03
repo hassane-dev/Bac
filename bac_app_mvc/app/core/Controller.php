@@ -5,14 +5,24 @@
  * Tous les autres contrôleurs hériteront de cette classe.
  */
 abstract class Controller {
-    protected $db;
-    protected static $translations = [];
+    protected $db; // Instance de la base de données
+    protected static $translations = []; // Stockage des traductions chargées
 
     public function __construct() {
-        // Initialiser la connexion à la base de données pour tous les contrôleurs
+        // S'assurer que config.php est chargé pour les constantes DB_* et APP_ROOT
+        if (!defined('APP_ROOT')) {
+            // Ceci est une sécurité, config.php devrait être chargé par public/index.php
+            $configFile = dirname(__DIR__, 2) . '/config.php'; // Remonte de app/core à bac_app_mvc puis config.php
+            if (file_exists($configFile)) {
+                require_once $configFile;
+            } else {
+                die("Fichier de configuration introuvable.");
+            }
+        }
+
         $this->db = new Database();
 
-        // Charger les traductions une seule fois
+        // Charger les traductions une seule fois par requête (ou par session de langue)
         if (empty(self::$translations)) {
             self::$translations = $this->loadTranslations();
         }
@@ -21,54 +31,47 @@ abstract class Controller {
     /**
      * Charge un modèle.
      *
-     * @param string $model Le nom du fichier modèle (ex: 'User')
+     * @param string $modelLe Le nom du fichier modèle (ex: 'User' pour User.php)
      * @return object|false L'instance du modèle ou false si non trouvé.
      */
-    protected function model($model) {
-        $modelFile = APP_ROOT . '/app/models/' . ucwords($model) . '.php';
+    protected function model($modelName) {
+        $modelFile = APP_ROOT . '/app/models/' . ucwords($modelName) . '.php';
         if (file_exists($modelFile)) {
             require_once $modelFile;
-            // Instancier le modèle
-            $modelClass = ucwords($model);
+            $modelClass = ucwords($modelName);
             if (class_exists($modelClass)) {
-                // Passer l'instance de la base de données au modèle si nécessaire
+                // Passer l'instance de la base de données au modèle
                 return new $modelClass($this->db);
-                // return new $modelClass(); // Simplifié pour l'instant
+            } else {
+                 View::renderError("Classe modèle '$modelClass' non trouvée dans '$modelFile'.");
+                 return false;
             }
         }
-        // Si le modèle n'est pas trouvé, on pourrait lancer une exception ou retourner false.
-        // error_log("Modèle '$modelFile' non trouvé.");
+        View::renderError("Fichier modèle '$modelFile' non trouvé.");
         return false;
     }
 
     /**
      * Charge et affiche une vue.
      *
-     * @param string $view Le nom du fichier de vue (ex: 'home/index')
+     * @param string $viewPath Le chemin vers le fichier de vue depuis app/views/ (ex: 'home/index')
      * @param array $data Les données à passer à la vue
      */
-    protected function view($view, $data = []) {
-        // Rendre les traductions disponibles pour toutes les vues
+    protected function view($viewPath, $data = []) {
+        // Rendre les traductions et autres données globales disponibles pour toutes les vues
         $data['tr'] = function($key, $params = []) {
             return $this->translate($key, $params);
         };
         $data['current_lang'] = $_SESSION['lang'] ?? DEFAULT_LANG;
-        $data['app_url'] = APP_URL; // Rendre APP_URL disponible dans les vues
+        $data['app_url'] = APP_URL;
+        $data['isLoggedIn'] = $this->isLoggedIn(); // Rendre le statut de connexion disponible aux vues
+        if ($this->isLoggedIn()) {
+            $data['current_username'] = $_SESSION['username'] ?? '';
+            $data['current_user_role_id'] = $_SESSION['user_role_id'] ?? null;
+        }
 
-        // Utiliser la classe View pour rendre la vue
-        View::render($view, $data);
 
-        // // Temporaire en attendant que View.php soit pleinement fonctionnel et intégré
-        // $viewFile = APP_ROOT . '/app/views/' . $view . '.php';
-        // if (file_exists($viewFile)) {
-        //     extract($data);
-        //     // require_once APP_ROOT . '/app/views/layouts/header.php'; // Exemple d'inclusion de layout
-        //     require_once $viewFile;
-        //     // require_once APP_ROOT . '/app/views/layouts/footer.php'; // Exemple d'inclusion de layout
-        // } else {
-        //      // die("Le fichier de vue '$viewFile' n'existe pas.");
-        //      echo "Erreur: Le fichier de vue '$viewFile' n'existe pas.";
-        // }
+        View::render($viewPath, $data);
     }
 
     /**
@@ -76,6 +79,16 @@ abstract class Controller {
      * @return array
      */
     private function loadTranslations() {
+        // Gestion du changement de langue via paramètre GET 'lang'
+        if (isset($_GET['lang']) && in_array($_GET['lang'], AVAILABLE_LANGS)) {
+            $_SESSION['lang'] = $_GET['lang'];
+            // Rediriger pour nettoyer l'URL du paramètre lang (optionnel mais propre)
+            // Attention: ceci peut causer des boucles si mal géré ou si la page actuelle est POST
+            // $currentUrl = strtok($_SERVER["REQUEST_URI"],'?');
+            // header("Location: " . $currentUrl);
+            // exit;
+        }
+
         $currentLang = $_SESSION['lang'] ?? DEFAULT_LANG;
         $langFile = APP_ROOT . '/lang/' . $currentLang . '.php';
 
@@ -86,7 +99,7 @@ abstract class Controller {
         if ($currentLang !== DEFAULT_LANG) {
             $defaultLangFile = APP_ROOT . '/lang/' . DEFAULT_LANG . '.php';
             if (file_exists($defaultLangFile)) {
-                $_SESSION['lang'] = DEFAULT_LANG; // Mettre à jour la session avec la langue de fallback
+                $_SESSION['lang'] = DEFAULT_LANG;
                 return include $defaultLangFile;
             }
         }
@@ -102,7 +115,6 @@ abstract class Controller {
      */
     protected function translate($key, $params = []) {
         $text = self::$translations[$key] ?? $key;
-
         foreach ($params as $paramKey => $paramValue) {
             $text = str_replace(':' . $paramKey, $paramValue, $text);
         }
@@ -110,17 +122,11 @@ abstract class Controller {
     }
 
     /**
-     * Redirige vers une URL.
-     * @param string $url L'URL de redirection.
+     * Redirige vers une URL interne.
+     * @param string $urlSegment Segment d'URL (ex: 'users/login').
      */
-    protected function redirect($url) {
-        View::redirect($url); // Utiliser la méthode de redirection de la classe View
-        // // Temporaire :
-        // if (!preg_match('/^https?:\/\//', $url)) {
-        //     $url = APP_URL . '/' . ltrim($url, '/');
-        // }
-        // header('Location: ' . $url);
-        // exit;
+    protected function redirect($urlSegment) {
+        View::redirect($urlSegment);
     }
 
     /**
@@ -154,7 +160,6 @@ abstract class Controller {
 
     /**
      * Vérifie si l'utilisateur connecté a une accréditation spécifique.
-     * Cette méthode devra être complétée avec la logique de récupération des accréditations de l'utilisateur.
      * @param string $requiredAccreditation Le libellé de l'accréditation requise.
      * @return bool
      */
@@ -163,66 +168,40 @@ abstract class Controller {
             return false;
         }
 
-        // Logique simplifiée pour l'instant: L'admin (role_id 1) a toutes les permissions.
-        if (isset($_SESSION['user_role_id']) && $_SESSION['user_role_id'] == 1) { // Supposant que l'ID 1 est pour l'Administrateur
+        // L'admin (role_id 1) a toutes les permissions.
+        if (isset($_SESSION['user_role_id']) && $_SESSION['user_role_id'] == 1) {
             return true;
         }
 
-        // Logique plus complète à implémenter:
-        // 1. Récupérer les accréditations associées au rôle de l'utilisateur (stockées en session lors du login).
-        // $userAccreditations = $_SESSION['user_accreditations'] ?? [];
-        // return in_array($requiredAccreditation, $userAccreditations);
-
-        // Pour l'instant, pour les non-admins, on refuse par défaut si ce n'est pas l'admin.
-        // Cela devra être adapté une fois la gestion fine des accréditations en place.
-        // Pour des tests initiaux, on peut permettre certaines actions si on est loggué
-        // if ($requiredAccreditation === 'view_dashboard' && $this->isLoggedIn()) return true;
-
-        // Si vous voulez une permission spécifique pour le dashboard pour tout utilisateur connecté:
-        if ($requiredAccreditation === 'access_dashboard') {
-            return true; // Tout utilisateur connecté peut accéder au dashboard
-        }
-
-
-        // Pour les autres permissions, charger les accréditations de l'utilisateur depuis la session
-        // (elles devraient y être stockées après une connexion réussie)
-        $userAccreditations = [];
-        if (isset($_SESSION['user_role_id'])) {
-            // Ceci est une solution temporaire. Idéalement, les accréditations sont chargées une fois au login.
-            $roleModel = $this->model('Role'); // Assurez-vous que le modèle Role est accessible
-            if ($roleModel) {
+        // Charger les accréditations de l'utilisateur si pas déjà en session
+        if (!isset($_SESSION['user_accreditations'])) {
+            $roleModel = $this->model('Role');
+            if ($roleModel && isset($_SESSION['user_role_id'])) {
                 $accreditationsObjects = $roleModel->getAccreditations($_SESSION['user_role_id']);
-                $userAccreditations = array_map(function($acc) { return $acc->libelle_action; }, $accreditationsObjects);
-                // Stocker en session pour éviter de requêter à chaque fois (optionnel mais recommandé)
-                // $_SESSION['user_accreditations'] = $userAccreditations;
+                $_SESSION['user_accreditations'] = array_map(function($acc) { return $acc->libelle_action; }, $accreditationsObjects);
+            } else {
+                $_SESSION['user_accreditations'] = [];
             }
         }
-
-        return in_array($requiredAccreditation, $userAccreditations);
+        return in_array($requiredAccreditation, $_SESSION['user_accreditations']);
     }
 }
 
-// Création d'un HomeController basique maintenant que Controller.php existe.
-// Ceci est nécessaire pour que le Router.php ne cause pas d'erreur fatale.
+// Création d'un HomeController basique si non existant
 if (!file_exists(APP_ROOT . '/app/controllers/HomeController.php')) {
     $homeControllerContent = "<?php\n\n";
-    // require_once APP_ROOT . '/app/core/Controller.php'; // Controller.php est déjà requis par Router ou autoloader
     $homeControllerContent .= "class HomeController extends Controller {\n";
     $homeControllerContent .= "    public function __construct() {\n";
     $homeControllerContent .= "        parent::__construct();\n";
     $homeControllerContent .= "    }\n\n";
     $homeControllerContent .= "    public function index() {\n";
-    $homeControllerContent .= "        // Si l'utilisateur est connecté, rediriger vers le tableau de bord\n";
     $homeControllerContent .= "        if (\$this->isLoggedIn()) {\n";
     $homeControllerContent .= "            \$this->redirect('dashboard');\n";
     $homeControllerContent .= "        } else {\n";
-    $homeControllerContent .= "            // Sinon, rediriger vers la page de connexion\n";
     $homeControllerContent .= "            \$this->redirect('auth/login');\n";
     $homeControllerContent .= "        }\n";
     $homeControllerContent .= "    }\n";
     $homeControllerContent .= "}\n";
-
     file_put_contents(APP_ROOT . '/app/controllers/HomeController.php', $homeControllerContent);
 }
-
 ?>

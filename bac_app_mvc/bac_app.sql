@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS roles (
 -- Table: accreditations
 CREATE TABLE IF NOT EXISTS accreditations (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  libelle_action VARCHAR(100) UNIQUE NOT NULL COMMENT 'Examples: create_student, edit_grades, view_reports'
+  libelle_action VARCHAR(100) UNIQUE NOT NULL COMMENT 'Examples: create_student, edit_grades, view_reports, manage_users, manage_settings'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table: eleves
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS roles_accreditations (
   UNIQUE KEY uk_role_accreditation (role_id, accreditation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table: annees_scolaires (NOUVELLE TABLE)
+-- Table: annees_scolaires
 CREATE TABLE IF NOT EXISTS annees_scolaires (
   id INT PRIMARY KEY AUTO_INCREMENT,
   libelle VARCHAR(20) NOT NULL UNIQUE COMMENT 'e.g., 2023-2024',
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS annees_scolaires (
   est_active BOOLEAN NOT NULL DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table: configurations_pedagogiques (NOUVELLE TABLE)
+-- Table: configurations_pedagogiques
 CREATE TABLE IF NOT EXISTS configurations_pedagogiques (
   id INT PRIMARY KEY AUTO_INCREMENT,
   annee_scolaire_id INT NOT NULL,
@@ -155,18 +155,18 @@ CREATE TABLE IF NOT EXISTS configurations_pedagogiques (
   UNIQUE KEY uk_config_pedagogique_annee (annee_scolaire_id) COMMENT 'Une seule config péda par année scolaire'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table: configurations_linguistiques (NOUVELLE TABLE - Globale)
+-- Table: configurations_linguistiques (Globale)
 CREATE TABLE IF NOT EXISTS configurations_linguistiques (
-  id INT PRIMARY KEY AUTO_INCREMENT, -- Il n'y aura qu'une seule ligne
+  id INT PRIMARY KEY AUTO_INCREMENT, -- Il n'y aura qu'une seule ligne, ID 1
   langues_actives_json TEXT NOT NULL COMMENT 'JSON array of active language codes, e.g., ["fr", "ar"]',
   langue_principale VARCHAR(10) NOT NULL DEFAULT 'fr',
   langue_secondaire VARCHAR(10) DEFAULT NULL,
-  mode_affichage_documents ENUM('unilingue', 'bilingue') NOT NULL DEFAULT 'bilingue' COMMENT 'Comment les documents doivent être générés'
+  mode_affichage_documents ENUM('unilingue', 'bilingue') NOT NULL DEFAULT 'bilingue'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table: parametres_generaux (REVISÉE)
+-- Table: parametres_generaux (Révisée - Globale)
 CREATE TABLE IF NOT EXISTS parametres_generaux (
-  id INT PRIMARY KEY AUTO_INCREMENT, -- Il n'y aura qu'une seule ligne
+  id INT PRIMARY KEY AUTO_INCREMENT, -- Il n'y aura qu'une seule ligne, ID 1
   republique_de VARCHAR(255) NULL,
   devise_republique VARCHAR(255) NULL,
   ministere_nom VARCHAR(255) NULL,
@@ -180,12 +180,11 @@ CREATE TABLE IF NOT EXISTS parametres_generaux (
   ville_office VARCHAR(100) NULL COMMENT 'Ville où se situe l''office pour les documents'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-
 -- Table: templates_documents (MODIFIÉE)
 CREATE TABLE IF NOT EXISTS templates_documents (
   id INT PRIMARY KEY AUTO_INCREMENT,
   type_document ENUM('diplome','releve','carte') NOT NULL,
-  element VARCHAR(50) NOT NULL COMMENT 'e.g., nom_eleve, date_naissance, moyenne_generale, qr_code, ou "document_background" pour le fond',
+  element VARCHAR(50) NOT NULL COMMENT 'e.g., nom_eleve, ou "_BACKGROUND_" pour le fond',
   position_x INT NOT NULL DEFAULT 0 COMMENT 'Position X en mm or pixels',
   position_y INT NOT NULL DEFAULT 0 COMMENT 'Position Y en mm or pixels',
   taille_police INT NULL DEFAULT 10 COMMENT 'Font size in points, NULL si non applicable (ex: fond)',
@@ -194,31 +193,35 @@ CREATE TABLE IF NOT EXISTS templates_documents (
   langue_affichage ENUM('fr','ar','fr_ar') NULL DEFAULT 'fr_ar' COMMENT 'Language to display this element in, NULL si non applicable',
   visible BOOLEAN NOT NULL DEFAULT TRUE,
 
-  -- Champs pour le fond du document (utilisés si element='document_background' ou via un flag dédié)
-  -- Pour simplifier, on pourrait avoir une ligne spéciale par type_document où element='_BACKGROUND_'
-  -- Ou une approche avec est_parametre_fond comme discuté.
-  -- Adoptons l'approche avec est_parametre_fond pour plus de clarté.
   est_parametre_fond BOOLEAN NOT NULL DEFAULT FALSE,
   type_fond ENUM('couleur', 'theme_app', 'image_upload') NULL,
   valeur_fond VARCHAR(255) NULL COMMENT 'Code HEX, nom du thème, ou chemin de l''image de fond',
   opacite_fond FLOAT NULL DEFAULT 1.0 CHECK (opacite_fond BETWEEN 0 AND 1),
 
-  -- S'assurer qu'un élément textuel est unique pour un type de document et une langue (sauf si c'est un param de fond)
-  UNIQUE KEY uk_template_element_langue (type_document, element, langue_affichage, est_parametre_fond),
-  -- S'assurer qu'il n'y a qu'un seul paramètre de fond par type de document
-  UNIQUE KEY uk_template_fond (type_document, est_parametre_fond)
+  UNIQUE KEY uk_template_element_type_langue (type_document, element, langue_affichage, est_parametre_fond),
+  UNIQUE KEY uk_template_fond_par_type (type_document, est_parametre_fond)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- Inserting default global configurations (une seule ligne pour chacune)
+-- Données initiales
+INSERT INTO roles (id, nom_role) VALUES (1, 'Administrateur'), (2, 'Agent d’enrôlement'), (3, 'Chef de centre'), (4, 'Correcteur'), (5, 'Directeur lycée')
+ON DUPLICATE KEY UPDATE nom_role=VALUES(nom_role);
+
+-- Ajouter un utilisateur admin par défaut si la table est vide (mot de passe: "password")
+-- Assurez-vous que le rôle ID 1 (Administrateur) existe
+INSERT IGNORE INTO users (id, username, mot_de_passe, role_id, nom, prenom, date_naissance, lieu_naissance, sexe, is_active)
+VALUES (1, 'admin', '$2y$10$N.SitGu8P8zMvLp9Tj9xS.27Uvztg679yC2.xM5FzBHDBu62Y09zO', 1, 'Admin', 'Sys', '1990-01-01', 'System', 'M', 1);
+
 INSERT INTO configurations_linguistiques (id, langues_actives_json, langue_principale, langue_secondaire, mode_affichage_documents)
 VALUES (1, '["fr", "ar"]', 'fr', 'ar', 'bilingue')
-ON DUPLICATE KEY UPDATE langues_actives_json='["fr", "ar"]', langue_principale='fr', langue_secondaire='ar', mode_affichage_documents='bilingue';
+ON DUPLICATE KEY UPDATE langues_actives_json=VALUES(langues_actives_json), langue_principale=VALUES(langue_principale), langue_secondaire=VALUES(langue_secondaire), mode_affichage_documents=VALUES(mode_affichage_documents);
 
-INSERT INTO parametres_generaux (id, republique_de, devise_republique, ministere_nom, office_examen_nom, direction_nom)
-VALUES (1, 'République du Tchad', 'Unité - Travail - Progrès', 'Ministère de l''Éducation Nationale et de la Promotion Civique', 'Office National des Examens et Concours du Supérieur (ONECS)', 'Direction Générale')
-ON DUPLICATE KEY UPDATE republique_de='République du Tchad', devise_republique='Unité - Travail - Progrès';
+INSERT INTO parametres_generaux (id, republique_de, devise_republique, ministere_nom, office_examen_nom, direction_nom, ville_office)
+VALUES (1, 'République du Tchad', 'Unité - Travail - Progrès', 'Ministère de l''Éducation Nationale et de la Promotion Civique', 'Office National des Examens et Concours du Supérieur (ONECS)', 'Direction Générale', 'N''Djaména')
+ON DUPLICATE KEY UPDATE republique_de=VALUES(republique_de), devise_republique=VALUES(devise_republique), ministere_nom=VALUES(ministere_nom), office_examen_nom=VALUES(office_examen_nom), direction_nom=VALUES(direction_nom), ville_office=VALUES(ville_office);
 
+-- Exemple d'année scolaire initiale
+INSERT IGNORE INTO annees_scolaires (libelle, date_debut, date_fin, est_active) VALUES ('2023-2024', '2023-10-01', '2024-07-31', TRUE);
 
 SET FOREIGN_KEY_CHECKS=1;
 

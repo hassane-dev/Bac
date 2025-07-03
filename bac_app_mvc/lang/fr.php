@@ -36,9 +36,11 @@ return [
     'go_back_home' => 'Retourner à l\'accueil',
 
     // Authentification
-    'login_failed' => 'Échec de la connexion. Vérifiez vos identifiants.',
+    'login_failed' => 'Échec de la connexion. Vérifiez vos identifiants ou contactez un administrateur.',
     'logged_out_successfully' => 'Déconnexion réussie.',
     'access_denied' => 'Accès refusé. Vous n\'avez pas les permissions nécessaires.',
+    'user_account_inactive' => "Votre compte utilisateur est inactif. Veuillez contacter l'administrateur.",
+    'forgot_password' => "Mot de passe oublié ?",
 
     // Éleves
     'students' => 'Élèves',
@@ -62,7 +64,7 @@ return [
 
     // Utilisateurs
     'users' => 'Utilisateurs',
-    'user_list' => 'Liste des utilisateurs',
+    'user_list' => 'Liste des Utilisateurs',
     'add_user' => 'Ajouter un utilisateur',
     'edit_user' => 'Modifier l\'utilisateur',
     'user_details' => 'Détails de l\'utilisateur',
@@ -70,61 +72,6 @@ return [
     'roles' => 'Rôles',
     'phone_number' => 'Numéro de téléphone',
     'place_of_birth' => 'Lieu de naissance',
-
-    // Documents
-    'documents' => 'Documents',
-    'generate_documents' => 'Générer des documents',
-    'transcript' => 'Relevé de notes',
-    'diploma' => 'Diplôme',
-    'student_card' => 'Carte d\'étudiant',
-
-    // Langues
-    'language' => 'Langue',
-    'french' => 'Français',
-    'arabic' => 'Arabe',
-
-    // ... autres traductions spécifiques à l'application
-    'welcome_text_example' => 'Ceci est un texte d\'exemple en français.',
-
-    // Pour Roles
-    'add_new_role' => 'Ajouter un nouveau rôle',
-    'no_roles_found' => 'Aucun rôle trouvé.',
-    'role_name' => 'Nom du Rôle',
-    'are_you_sure_delete_role' => 'Êtes-vous sûr de vouloir supprimer ce rôle ?',
-    'role_added_successfully' => 'Rôle ajouté avec succès.',
-    'error_adding_role' => 'Erreur lors de l\'ajout du rôle.',
-    'role_updated_successfully' => 'Rôle mis à jour avec succès.',
-    'error_updating_role' => 'Erreur lors de la mise à jour du rôle.',
-    'role_deleted_successfully' => 'Rôle supprimé avec succès.',
-    'error_deleting_role' => 'Erreur lors de la suppression du rôle.',
-    'role_not_found' => 'Rôle non trouvé.',
-    'please_enter_role_name' => 'Veuillez saisir le nom du rôle.',
-    'save' => 'Enregistrer',
-    'role_list' => 'Liste des Rôles',
-    'add_role' => 'Ajouter un Rôle',
-    'edit_role' => 'Modifier le Rôle',
-    'assign_accreditations' => 'Assigner les Accréditations',
-    'no_accreditations_available' => 'Aucune accréditation disponible.',
-
-    // Pour Accreditations
-    'accreditation_list' => 'Liste des Accréditations',
-    'add_new_accreditation' => 'Ajouter une nouvelle accréditation',
-    'no_accreditations_found' => 'Aucune accréditation trouvée.',
-    'accreditation_label' => "Libellé de l'action",
-    'are_you_sure_delete_accreditation' => 'Êtes-vous sûr de vouloir supprimer cette accréditation ?',
-    'accreditation_added_successfully' => 'Accréditation ajoutée avec succès.',
-    'error_adding_accreditation' => "Erreur lors de l'ajout de l'accréditation.",
-    'accreditation_updated_successfully' => 'Accréditation mise à jour avec succès.',
-    'error_updating_accreditation' => "Erreur lors de la mise à jour de l'accréditation.",
-    'accreditation_deleted_successfully' => 'Accréditation supprimée avec succès.',
-    'error_deleting_accreditation' => "Erreur lors de la suppression de l'accréditation.",
-    'accreditation_not_found' => 'Accréditation non trouvée.',
-    'please_enter_accreditation_label' => "Veuillez saisir le libellé de l'accréditation.",
-    'edit_accreditation' => "Modifier l'Accréditation",
-    'add_accreditation' => "Ajouter une Accréditation",
-
-    // Pour Users
-    'user_list' => 'Liste des Utilisateurs',
     'add_new_user' => 'Ajouter un nouvel utilisateur',
     'no_users_found' => 'Aucun utilisateur trouvé.',
     'are_you_sure_delete_user' => 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
@@ -160,10 +107,55 @@ return [
     'cannot_delete_main_admin' => "L'administrateur principal ne peut pas être supprimé.",
     'email' => "Email",
 
-    // Pour AuthController et login view
-    'user_account_inactive' => "Votre compte utilisateur est inactif. Veuillez contacter l'administrateur.",
-    'forgot_password' => "Mot de passe oublié ?",
-    'dashboard' => "Tableau de bord", // Déjà présent mais réaffirmé ici pour contexte
+    // Documents
+    'documents' => 'Documents',
+    'generate_documents' => 'Générer des documents',
+    'transcript' => 'Relevé de notes',
+    'diploma' => 'Diplôme',
+    'student_card' => 'Carte d\'étudiant',
+
+    // Langues (Général)
+    'language' => 'Langue',
+    'french' => 'Français',
+    'arabic' => 'العربية', // Pour affichage du nom de la langue Arabe en Français
+    'language_name_native' => 'Français',
+    'language_name_in_french' => 'Français',
+
+    // Pour Roles
+    'add_new_role' => 'Ajouter un nouveau rôle',
+    'no_roles_found' => 'Aucun rôle trouvé.',
+    'role_name' => 'Nom du Rôle',
+    'are_you_sure_delete_role' => 'Êtes-vous sûr de vouloir supprimer ce rôle ?',
+    'role_added_successfully' => 'Rôle ajouté avec succès.',
+    'error_adding_role' => 'Erreur lors de l\'ajout du rôle.',
+    'role_updated_successfully' => 'Rôle mis à jour avec succès.',
+    'error_updating_role' => 'Erreur lors de la mise à jour du rôle.',
+    'role_deleted_successfully' => 'Rôle supprimé avec succès.',
+    'error_deleting_role' => 'Erreur lors de la suppression du rôle.',
+    'role_not_found' => 'Rôle non trouvé.',
+    'please_enter_role_name' => 'Veuillez saisir le nom du rôle.',
+    'role_list' => 'Liste des Rôles',
+    'add_role' => 'Ajouter un Rôle',
+    'edit_role' => 'Modifier le Rôle',
+    'assign_accreditations' => 'Assigner les Accréditations',
+    'no_accreditations_available' => 'Aucune accréditation disponible.',
+
+    // Pour Accreditations
+    'accreditation_list' => 'Liste des Accréditations',
+    'add_new_accreditation' => 'Ajouter une nouvelle accréditation',
+    'no_accreditations_found' => 'Aucune accréditation trouvée.',
+    'accreditation_label' => "Libellé de l'action",
+    'are_you_sure_delete_accreditation' => 'Êtes-vous sûr de vouloir supprimer cette accréditation ?',
+    'accreditation_added_successfully' => 'Accréditation ajoutée avec succès.',
+    'error_adding_accreditation' => "Erreur lors de l'ajout de l'accréditation.",
+    'accreditation_updated_successfully' => 'Accréditation mise à jour avec succès.',
+    'error_updating_accreditation' => "Erreur lors de la mise à jour de l'accréditation.",
+    'accreditation_deleted_successfully' => 'Accréditation supprimée avec succès.',
+    'error_deleting_accreditation' => "Erreur lors de la suppression de l'accréditation.",
+    'accreditation_not_found' => 'Accréditation non trouvée.',
+    'please_enter_accreditation_label' => "Veuillez saisir le libellé de l'accréditation.",
+    'edit_accreditation' => "Modifier l'Accréditation",
+    'add_accreditation' => "Ajouter une Accréditation",
 
     // Pour DashboardController et dashboard view
     'welcome_to_dashboard' => 'Bienvenue sur votre tableau de bord, :username !',
@@ -228,7 +220,6 @@ return [
     'or' => 'Ou',
     'if_not_listed' => 'si non listée.',
 
-
     // Pour ParametresController et parametres/index view
     'general_settings' => 'Paramètres Généraux',
     'institutional_information' => 'Informations Institutionnelles',
@@ -250,13 +241,11 @@ return [
     'error_updating_settings' => 'Erreur lors de la mise à jour des paramètres.',
     'error_uploading_file' => 'Erreur lors du téléversement du fichier pour :field',
     'file_not_image' => "Le fichier n'est pas une image.",
-    'file_too_large' => "Le fichier est trop volumineux (max 5MB).",
-    'unsupported_file_type' => "Type de fichier non supporté (JPG, PNG, GIF uniquement).",
+    'file_too_large' => "Le fichier est trop volumineux (max :size).", // :size sera remplacé dans le contrôleur
+    'unsupported_file_type' => "Type de fichier non supporté (JPG, PNG, GIF uniquement).", // Gardé pour usage général si besoin
+    'unsupported_file_type_image' => "Type de fichier non supporté (images JPG, PNG, GIF, SVG uniquement).", // Plus spécifique pour images
     'error_during_upload' => "Une erreur s'est produite lors du téléversement de votre fichier.",
-
-    // Noms de langue (pour la sélection dynamique)
-    'language_name_native' => 'Français', // Sera écrasé par la valeur du fichier de langue si présente
-    'language_name_in_french' => 'Français', // Nom de la langue en français
+    'delete_current_file' => 'Supprimer le fichier actuel',
 
     // Pour ConfigurationsLinguistiques
     'language_settings' => 'Paramètres Linguistiques',

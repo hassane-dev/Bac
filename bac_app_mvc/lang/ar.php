@@ -36,9 +36,11 @@ return [
     'go_back_home' => 'العودة إلى الصفحة الرئيسية',
 
     // Authentification
-    'login_failed' => 'فشل تسجيل الدخول. تحقق من بيانات الاعتماد الخاصة بك.',
+    'login_failed' => 'فشل تسجيل الدخول. تحقق من بيانات الاعتماد الخاصة بك أو اتصل بالمسؤول.',
     'logged_out_successfully' => 'تم تسجيل الخروج بنجاح.',
     'access_denied' => 'الوصول مرفوض. ليس لديك الأذونات اللازمة.',
+    'user_account_inactive' => "حساب المستخدم الخاص بك غير نشط. يرجى الاتصال بالمسؤول.",
+    'forgot_password' => "هل نسيت كلمة المرور؟",
 
     // Éleves
     'students' => 'الطلاب',
@@ -70,61 +72,6 @@ return [
     'roles' => 'الأدوار',
     'phone_number' => 'رقم الهاتف',
     'place_of_birth' => 'مكان الميلاد',
-
-    // Documents
-    'documents' => 'الوثائق',
-    'generate_documents' => 'إنشاء الوثائق',
-    'transcript' => 'كشف النقاط',
-    'diploma' => 'الشهادة',
-    'student_card' => 'بطاقة الطالب',
-
-    // Langues
-    'language' => 'اللغة',
-    'french' => 'الفرنسية',
-    'arabic' => 'العربية',
-
-    // ... autres traductions spécifiques à l'application
-    'welcome_text_example' => 'هذا نص مثال باللغة العربية.',
-
-    // Pour Roles (traduction à améliorer si besoin)
-    'add_new_role' => 'إضافة دور جديد',
-    'no_roles_found' => 'لم يتم العثور على أدوار.',
-    'role_name' => 'اسم الدور',
-    'are_you_sure_delete_role' => 'هل أنت متأكد أنك تريد حذف هذا الدور؟',
-    'role_added_successfully' => 'تمت إضافة الدور بنجاح.',
-    'error_adding_role' => 'خطأ أثناء إضافة الدور.',
-    'role_updated_successfully' => 'تم تحديث الدور بنجاح.',
-    'error_updating_role' => 'خطأ أثناء تحديث الدور.',
-    'role_deleted_successfully' => 'تم حذف الدور بنجاح.',
-    'error_deleting_role' => 'خطأ أثناء حذف الدور.',
-    'role_not_found' => 'الدور غير موجود.',
-    'please_enter_role_name' => 'الرجاء إدخال اسم الدور.',
-    'save' => 'حفظ',
-    'role_list' => 'قائمة الأدوار',
-    'add_role' => 'إضافة دور',
-    'edit_role' => 'تعديل الدور',
-    'assign_accreditations' => 'تعيين الاعتمادات',
-    'no_accreditations_available' => 'لا توجد اعتمادات متاحة.',
-
-    // Pour Accreditations
-    'accreditation_list' => 'قائمة الاعتمادات',
-    'add_new_accreditation' => 'إضافة اعتماد جديد',
-    'no_accreditations_found' => 'لم يتم العثور على اعتمادات.',
-    'accreditation_label' => "تسمية الإجراء",
-    'are_you_sure_delete_accreditation' => 'هل أنت متأكد أنك تريد حذف هذا الاعتماد؟',
-    'accreditation_added_successfully' => 'تمت إضافة الاعتماد بنجاح.',
-    'error_adding_accreditation' => 'خطأ أثناء إضافة الاعتماد.',
-    'accreditation_updated_successfully' => 'تم تحديث الاعتماد بنجاح.',
-    'error_updating_accreditation' => 'خطأ أثناء تحديث الاعتماد.',
-    'accreditation_deleted_successfully' => 'تم حذف الاعتماد بنجاح.',
-    'error_deleting_accreditation' => 'خطأ أثناء حذف الاعتماد.',
-    'accreditation_not_found' => 'الاعتماد غير موجود.',
-    'please_enter_accreditation_label' => 'الرجاء إدخال تسمية الاعتماد.',
-    'edit_accreditation' => "تعديل الاعتماد",
-    'add_accreditation' => "إضافة اعتماد",
-
-    // Pour Users
-    'user_list' => 'قائمة المستخدمين',
     'add_new_user' => 'إضافة مستخدم جديد',
     'no_users_found' => 'لم يتم العثور على مستخدمين.',
     'are_you_sure_delete_user' => 'هل أنت متأكد أنك تريد حذف هذا المستخدم؟',
@@ -160,10 +107,55 @@ return [
     'cannot_delete_main_admin' => "لا يمكن حذف المسؤول الرئيسي.",
     'email' => "البريد الإلكتروني",
 
-    // Pour AuthController et login view
-    'user_account_inactive' => "حساب المستخدم الخاص بك غير نشط. يرجى الاتصال بالمسؤول.",
-    'forgot_password' => "هل نسيت كلمة المرور؟",
-    // 'dashboard' => 'لوحة التحكم', // Déjà présent
+    // Documents
+    'documents' => 'الوثائق',
+    'generate_documents' => 'إنشاء الوثائق',
+    'transcript' => 'كشف النقاط',
+    'diploma' => 'الشهادة',
+    'student_card' => 'بطاقة الطالب',
+
+    // Langues (Général)
+    'language' => 'اللغة',
+    'french' => 'الفرنسية', // Pour affichage du nom de la langue Française en Arabe
+    'arabic' => 'العربية',
+    'language_name_native' => 'العربية',
+    'language_name_in_french' => 'Arabe',
+
+    // Pour Roles
+    'add_new_role' => 'إضافة دور جديد',
+    'no_roles_found' => 'لم يتم العثور على أدوار.',
+    'role_name' => 'اسم الدور',
+    'are_you_sure_delete_role' => 'هل أنت متأكد أنك تريد حذف هذا الدور؟',
+    'role_added_successfully' => 'تمت إضافة الدور بنجاح.',
+    'error_adding_role' => 'خطأ أثناء إضافة الدور.',
+    'role_updated_successfully' => 'تم تحديث الدور بنجاح.',
+    'error_updating_role' => 'خطأ أثناء تحديث الدور.',
+    'role_deleted_successfully' => 'تم حذف الدور بنجاح.',
+    'error_deleting_role' => 'خطأ أثناء حذف الدور.',
+    'role_not_found' => 'الدور غير موجود.',
+    'please_enter_role_name' => 'الرجاء إدخال اسم الدور.',
+    'role_list' => 'قائمة الأدوار',
+    'add_role' => 'إضافة دور',
+    'edit_role' => 'تعديل الدور',
+    'assign_accreditations' => 'تعيين الاعتمادات',
+    'no_accreditations_available' => 'لا توجد اعتمادات متاحة.',
+
+    // Pour Accreditations
+    'accreditation_list' => 'قائمة الاعتمادات',
+    'add_new_accreditation' => 'إضافة اعتماد جديد',
+    'no_accreditations_found' => 'لم يتم العثور على اعتمادات.',
+    'accreditation_label' => "تسمية الإجراء",
+    'are_you_sure_delete_accreditation' => 'هل أنت متأكد أنك تريد حذف هذا الاعتماد؟',
+    'accreditation_added_successfully' => 'تمت إضافة الاعتماد بنجاح.',
+    'error_adding_accreditation' => 'خطأ أثناء إضافة الاعتماد.',
+    'accreditation_updated_successfully' => 'تم تحديث الاعتماد بنجاح.',
+    'error_updating_accreditation' => 'خطأ أثناء تحديث الاعتماد.',
+    'accreditation_deleted_successfully' => 'تم حذف الاعتماد بنجاح.',
+    'error_deleting_accreditation' => 'خطأ أثناء حذف الاعتماد.',
+    'accreditation_not_found' => 'الاعتماد غير موجود.',
+    'please_enter_accreditation_label' => 'الرجاء إدخال تسمية الاعتماد.',
+    'edit_accreditation' => "تعديل الاعتماد",
+    'add_accreditation' => "إضافة اعتماد",
 
     // Pour DashboardController et dashboard view
     'welcome_to_dashboard' => 'مرحباً بك في لوحة التحكم الخاصة بك، :username!',
@@ -249,15 +241,13 @@ return [
     'error_updating_settings' => 'خطأ أثناء تحديث الإعدادات.',
     'error_uploading_file' => 'خطأ أثناء تحميل الملف للحقل :field',
     'file_not_image' => 'الملف ليس صورة.',
-    'file_too_large' => 'الملف كبير جدًا (الحد الأقصى 5 ميجابايت).',
+    'file_too_large' => 'الملف كبير جدًا (الحد الأقصى :size).',
     'unsupported_file_type' => 'نوع الملف غير مدعوم (JPG, PNG, GIF فقط).',
+    'unsupported_file_type_image' => "نوع الملف غير مدعوم (صور JPG, PNG, GIF, SVG فقط).",
     'error_during_upload' => 'حدث خطأ أثناء تحميل ملفك.',
+    'delete_current_file' => 'حذف الملف الحالي',
 
-    // Noms de langue
-    'language_name_native' => 'العربية',
-    'language_name_in_french' => 'Arabe',
-
-    // Pour ConfigurationsLinguistiquesController et sa vue
+    // Pour ConfigurationsLinguistiques
     'language_settings' => 'إعدادات اللغة',
     'active_languages_interface_docs' => 'اللغات النشطة (الواجهة والمستندات)',
     'no_languages_found_in_lang_dir' => 'لم يتم العثور على ملفات لغة متوافقة في المجلد /lang.',

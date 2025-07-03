@@ -3,7 +3,7 @@
 class Database {
     private $host = DB_HOST;
     private $db_name = DB_NAME;
-    private_user = DB_USER;
+    private $user = DB_USER; // Corrigé de private_user
     private $pass = DB_PASS;
 
     private $dbh; // Database Handler
@@ -14,24 +14,21 @@ class Database {
         // Définir le DSN (Data Source Name)
         $dsn = 'mysql:host=' . $this->host . ';dbname=' . $this->db_name . ';charset=utf8mb4';
         $options = [
-            PDO::ATTR_PERSISTENT => true, // Connexion persistante pour améliorer les performances
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Lancer des exceptions en cas d'erreur
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, // Récupérer les résultats sous forme de tableau associatif
-            PDO::ATTR_EMULATE_PREPARES => false, // Utiliser de vraies requêtes préparées
+            PDO::ATTR_PERSISTENT => true,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ, // Changé en FETCH_OBJ pour retourner des objets
+            PDO::ATTR_EMULATE_PREPARES => false,
         ];
 
-        // Créer une instance de PDO
         try {
             $this->dbh = new PDO($dsn, $this->user, $this->pass, $options);
         } catch (PDOException $e) {
             $this->error = $e->getMessage();
-            // En mode développement, afficher l'erreur. En production, logguer l'erreur.
             if (SHOW_ERRORS) {
-                die("Erreur de connexion à la base de données : " . $this->error);
+                View::renderError("Erreur de connexion à la base de données : " . $this->error, 500);
             } else {
-                // Log l'erreur dans un fichier ou un système de logging
                 error_log("Erreur de connexion DB: " . $this->error);
-                die("Une erreur est survenue. Veuillez réessayer plus tard.");
+                View::renderError("Une erreur de base de données est survenue. Veuillez réessayer plus tard.", 500);
             }
         }
     }
@@ -41,7 +38,17 @@ class Database {
      * @param string $sql La requête SQL à préparer.
      */
     public function query($sql) {
-        $this->stmt = $this->dbh->prepare($sql);
+        try {
+            $this->stmt = $this->dbh->prepare($sql);
+        } catch (PDOException $e) {
+            $this->error = $e->getMessage();
+            if (SHOW_ERRORS) {
+                 View::renderError("Erreur de préparation de la requête: " . $this->error . "<br>SQL: " . $sql, 500);
+            } else {
+                error_log("Erreur SQL (prepare): " . $this->error . " | Query: " . $sql);
+                View::renderError("Une erreur de base de données est survenue.", 500);
+            }
+        }
     }
 
     /**
@@ -66,7 +73,9 @@ class Database {
                     $type = PDO::PARAM_STR;
             }
         }
-        $this->stmt->bindValue($param, $value, $type);
+        if ($this->stmt) {
+            $this->stmt->bindValue($param, $value, $type);
+        }
     }
 
     /**
@@ -74,35 +83,37 @@ class Database {
      * @return bool True en cas de succès, false sinon.
      */
     public function execute() {
+        if (!$this->stmt) return false;
         try {
             return $this->stmt->execute();
         } catch (PDOException $e) {
             $this->error = $e->getMessage();
             if (SHOW_ERRORS) {
-                echo "Erreur d'exécution de la requête: " . $this->error . "<br>SQL: " . $this->stmt->queryString;
+                View::renderError("Erreur d'exécution de la requête: " . $this->error . "<br>SQL: " . $this->stmt->queryString, 500);
             } else {
-                error_log("Erreur SQL: " . $this->error . " | Query: " . $this->stmt->queryString);
+                error_log("Erreur SQL (execute): " . $this->error . " | Query: " . $this->stmt->queryString);
+                 View::renderError("Une erreur de base de données est survenue lors de l'exécution.", 500);
             }
             return false;
         }
     }
 
     /**
-     * Récupère tous les résultats de la requête sous forme de tableau d'objets (ou tableaux associatifs).
+     * Récupère tous les résultats de la requête.
      * @return array
      */
     public function resultSet() {
-        $this->execute();
-        return $this->stmt->fetchAll(); // Utilise le FETCH_MODE défini dans le constructeur (PDO::FETCH_ASSOC)
+        if (!$this->execute()) return [];
+        return $this->stmt->fetchAll(); // Utilise le FETCH_MODE défini (PDO::FETCH_OBJ)
     }
 
     /**
      * Récupère un seul résultat de la requête.
-     * @return mixed
+     * @return mixed (object|false)
      */
     public function single() {
-        $this->execute();
-        return $this->stmt->fetch(); // Utilise le FETCH_MODE défini dans le constructeur
+        if (!$this->execute()) return false;
+        return $this->stmt->fetch(); // Utilise le FETCH_MODE défini
     }
 
     /**
@@ -110,52 +121,35 @@ class Database {
      * @return int
      */
     public function rowCount() {
-        return $this->stmt->rowCount();
+        return $this->stmt ? $this->stmt->rowCount() : 0;
     }
 
     /**
      * Récupère l'ID du dernier enregistrement inséré.
-     * @return string
+     * @return string|false
      */
     public function lastInsertId() {
         return $this->dbh->lastInsertId();
     }
 
-    /**
-     * Commence une transaction.
-     */
+    /** Commence une transaction. */
     public function beginTransaction() {
         return $this->dbh->beginTransaction();
     }
 
-    /**
-     * Valide une transaction.
-     */
+    /** Valide une transaction. */
     public function commit() {
         return $this->dbh->commit();
     }
 
-    /**
-     * Annule une transaction.
-     */
+    /** Annule une transaction. */
     public function rollBack() {
         return $this->dbh->rollBack();
     }
 
-    /**
-     * Affiche les informations de la requête préparée (utile pour le débogage).
-     */
-    public function debugDumpParams() {
-        return $this->stmt->debugDumpParams();
-    }
-
-    /**
-     * Récupère la dernière erreur PDO.
-     * @return string
-     */
+    /** Récupère la dernière erreur PDO. @return string */
     public function getError() {
         return $this->error;
     }
 }
-
 ?>

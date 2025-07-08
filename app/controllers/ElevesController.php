@@ -5,6 +5,7 @@ class ElevesController extends Controller {
     private $anneeScolaireModel;
     private $serieModel;
     private $lyceeModel;
+    private $centreModel; // Ajout du modèle Centre
     private $uploadDirPhotos = 'uploads/eleves_photos/';
 
     public function __construct() {
@@ -18,6 +19,7 @@ class ElevesController extends Controller {
         $this->anneeScolaireModel = $this->model('AnneeScolaire');
         $this->serieModel = $this->model('Serie');
         $this->lyceeModel = $this->model('Lycee');
+        $this->centreModel = $this->model('Centre'); // Initialiser le modèle Centre
 
         $fullUploadDir = APP_ROOT . '/public/' . $this->uploadDirPhotos;
         if (!is_dir($fullUploadDir)) {
@@ -58,35 +60,130 @@ class ElevesController extends Controller {
         $data = [
             'title' => $this->translate('add_student'),
             'annee_scolaire_id' => $activeYear->id,
-            'annee_scolaire_libelle' => $activeYear->libelle, // Pour affichage
+            'annee_scolaire_libelle' => $activeYear->libelle,
             'series' => $this->serieModel->getAll(),
             'lycees' => $this->lyceeModel->getAll(),
-            // Initialiser les champs pour éviter les erreurs undefined dans la vue
+            'selected_lycee_id' => null, // Pour la présélection
+            'selected_centre_id' => null, // Pour la présélection
+            'selected_centre_nom' => null,
             'matricule' => '', 'nom' => '', 'prenom' => '', 'date_naissance' => '', 'sexe' => 'M',
             'serie_id' => '', 'lycee_id' => '', 'photo_path' => null,
             'empreinte1' => '', /* ... */ 'empreinte10' => '',
-            'errors' => [] // Pour stocker les erreurs de validation
+            'errors' => []
         ];
+
+        // Si un lycée et un centre ont été "pré-sélectionnés" (par un formulaire précédent ou une action)
+        if (isset($_SESSION['enroll_context']['lycee_id']) && isset($_SESSION['enroll_context']['centre_id'])) {
+            $data['selected_lycee_id'] = $_SESSION['enroll_context']['lycee_id'];
+            $data['selected_centre_id'] = $_SESSION['enroll_context']['centre_id'];
+            $centreInfo = $this->centreModel->getById($data['selected_centre_id']);
+            $data['selected_centre_nom'] = $centreInfo ? $centreInfo->nom_centre : '';
+            // On pourrait vouloir nettoyer la session ici ou après la première utilisation
+            // unset($_SESSION['enroll_context']);
+        }
+
         $this->view('eleves/create', $data);
     }
+
+    /**
+     * Étape 1 de l'enrôlement : sélection du lycée et détermination du centre.
+     */
+    public function selectContext() {
+        if (!$this->isLoggedIn()) { $this->redirect('auth/login'); return; }
+
+        $activeYear = $this->anneeScolaireModel->getActiveYear();
+        if (!$activeYear) {
+            $_SESSION['error_message'] = $this->translate('no_active_academic_year_enroll');
+            $this->redirect('anneesscolaires');
+            return;
+        }
+
+        $data = [
+            'title' => $this->translate('select_enrollment_context'), // 'Sélectionner le contexte d'enrôlement'
+            'lycees' => $this->lyceeModel->getAll(),
+            'annee_scolaire_id' => $activeYear->id,
+            'annee_scolaire_libelle' => $activeYear->libelle,
+            'selected_lycee_id' => null,
+            'selected_centre_id' => null,
+            'selected_centre_nom' => null,
+            'errors' => []
+        ];
+
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $lycee_id = (int)$_POST['lycee_id'];
+            // Logique pour trouver le centre_id basé sur lycee_id et annee_scolaire_id (activeYear->id)
+            // Cela suppose une fonction dans un modèle (par ex. CentreModel ou un nouveau AssignationModel)
+            // $assignation = $this->centreModel->getAssignationForLyceeAnnee($lycee_id, $activeYear->id); // Exemple
+
+            // Logique simplifiée pour l'instant : on suppose que l'assignation est directe
+            // Dans une vraie application, il faudrait interroger centres_assignations
+            $centre_id_found = null;
+            $centre_nom_found = null;
+
+            // --- Début de la logique de recherche du centre (à améliorer avec le modèle) ---
+            // Cette logique devrait être dans un modèle, ex: $this->centreModel->findCentreForLyceeInYear($lycee_id, $activeYear->id);
+            // Pour l'instant, simulation ou placeholder.
+            // On va chercher la première assignation pour ce lycée et cette année.
+            $this->db->query("SELECT centre_id FROM centres_assignations WHERE lycee_id = :lycee_id AND annee_scolaire_id = :annee_id LIMIT 1");
+            $this->db->bind(':lycee_id', $lycee_id);
+            $this->db->bind(':annee_id', $activeYear->id);
+            $assign_result = $this->db->single();
+
+            if ($assign_result) {
+                $centre_id_found = $assign_result->centre_id;
+                $centreInfo = $this->centreModel->getById($centre_id_found);
+                $centre_nom_found = $centreInfo ? $centreInfo->nom_centre : $this->translate('unknown_center');
+            }
+            // --- Fin de la logique de recherche du centre ---
+
+
+            if ($lycee_id && $centre_id_found) {
+                $_SESSION['enroll_context'] = [
+                    'annee_scolaire_id' => $activeYear->id,
+                    'annee_scolaire_libelle' => $activeYear->libelle,
+                    'lycee_id' => $lycee_id,
+                    'centre_id' => $centre_id_found,
+                    'centre_code' => $centreInfo->code_centre ?? '', // Important pour le matricule
+                    'lycee_nom' => $this->lyceeModel->getById($lycee_id)->nom_lycee ?? '',
+                    'centre_nom' => $centre_nom_found
+                ];
+                $this->redirect('eleves/create'); // Rediriger vers le formulaire d'enrôlement
+                return;
+            } else {
+                $data['errors']['context_err'] = $this->translate('center_not_assigned_for_lycee_year');
+            }
+        }
+        $this->view('eleves/select_context', $data);
+    }
+
 
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $activeYear = $this->anneeScolaireModel->getActiveYear();
+
+            // Récupérer le contexte depuis la session
+            if (!isset($_SESSION['enroll_context'])) {
+                $_SESSION['error_message'] = $this->translate('enrollment_context_not_set');
+                $this->redirect('eleves/selectContext'); // Rediriger pour définir le contexte
+                return;
+            }
+            $context = $_SESSION['enroll_context'];
 
             $data = [
-                'matricule' => trim($_POST['matricule']),
+                'matricule' => '', // Sera généré
                 'nom' => trim($_POST['nom']),
                 'prenom' => trim($_POST['prenom']),
                 'date_naissance' => $_POST['date_naissance'],
                 'sexe' => $_POST['sexe'],
                 'serie_id' => (int)$_POST['serie_id'],
-                'lycee_id' => (int)$_POST['lycee_id'],
-                'annee_scolaire_id' => (int)($_POST['annee_scolaire_id'] ?? ($activeYear ? $activeYear->id : null)),
-                'photo_path' => null, // Sera défini par l'upload ou la capture webcam
-                'webcam_photo_data' => $_POST['webcam_photo_data'] ?? null, // Données base64 de la webcam
-                // Empreintes (à adapter selon la méthode de capture réelle)
+                'lycee_id' => (int)$context['lycee_id'], // Depuis le contexte
+                'annee_scolaire_id' => (int)$context['annee_scolaire_id'], // Depuis le contexte
+                'centre_id' => (int)$context['centre_id'], // Depuis le contexte
+                'code_centre' => $context['centre_code'], // Pour génération matricule
+                'code_serie' => '', // Sera récupéré pour génération matricule
+                'photo_path' => null,
+                'webcam_photo_data' => $_POST['webcam_photo_data'] ?? null,
                 'empreinte1' => $_POST['empreinte1'] ?? null, 'empreinte2' => $_POST['empreinte2'] ?? null,
                 'empreinte3' => $_POST['empreinte3'] ?? null, 'empreinte4' => $_POST['empreinte4'] ?? null,
                 'empreinte5' => $_POST['empreinte5'] ?? null, 'empreinte6' => $_POST['empreinte6'] ?? null,
@@ -98,14 +195,26 @@ class ElevesController extends Controller {
             // --- Validation ---
             if (empty($data['matricule'])) $data['errors']['matricule_err'] = $this->translate('matricule_required');
             elseif ($this->eleveModel->matriculeExists($data['matricule'], $data['annee_scolaire_id'])) $data['errors']['matricule_err'] = $this->translate('matricule_exists_for_year');
-            // ... Autres validations pour nom, prenom, date_naissance, sexe, serie_id, lycee_id, annee_scolaire_id ...
+            // ... Autres validations pour nom, prenom, date_naissance, sexe, serie_id ...
             if (empty($data['nom'])) $data['errors']['nom_err'] = $this->translate('lastname_required');
             if (empty($data['prenom'])) $data['errors']['prenom_err'] = $this->translate('firstname_required');
             if (empty($data['date_naissance'])) $data['errors']['date_naissance_err'] = $this->translate('dob_required');
             if (empty($data['sexe'])) $data['errors']['sexe_err'] = $this->translate('gender_required');
             if (empty($data['serie_id'])) $data['errors']['serie_id_err'] = $this->translate('serie_required');
-            if (empty($data['lycee_id'])) $data['errors']['lycee_id_err'] = $this->translate('lycee_required');
-            if (empty($data['annee_scolaire_id'])) $data['errors']['annee_scolaire_id_err'] = $this->translate('academic_year_required');
+            // lycee_id, annee_scolaire_id, centre_id viennent du contexte, pas besoin de les revalider ici sauf pour existence.
+
+            // Récupérer le code_serie pour la génération du matricule
+            if (!empty($data['serie_id'])) {
+                $serieInfo = $this->serieModel->getById($data['serie_id']);
+                if ($serieInfo) {
+                    $data['code_serie'] = $serieInfo->code;
+                } else {
+                    $data['errors']['serie_id_err'] = $this->translate('serie_not_found');
+                }
+            }
+            if (empty($data['code_centre'])) { // Vérifier si le code centre est bien dans le contexte
+                 $data['errors']['context_err'] = $this->translate('center_code_missing_in_context');
+            }
 
 
             // Gestion Photo (Webcam prioritaire sur Upload)
@@ -136,23 +245,36 @@ class ElevesController extends Controller {
                     $this->redirect('eleves/index/' . $data['annee_scolaire_id']);
                 } else {
                     $_SESSION['error_message'] = $this->translate('error_adding_student');
-                    // Repopuler les données pour la vue create
+                    // Repopuler les données pour la vue create, y compris le contexte
                     $data['title'] = $this->translate('add_student');
-                    $data['annee_scolaire_libelle'] = $activeYear ? $activeYear->libelle : '';
+                    $data['annee_scolaire_id'] = $context['annee_scolaire_id'];
+                    $data['annee_scolaire_libelle'] = $context['annee_scolaire_libelle'];
+                    $data['selected_lycee_id'] = $context['lycee_id'];
+                    $data['selected_centre_id'] = $context['centre_id'];
+                    $data['selected_centre_nom'] = $context['centre_nom'];
                     $data['series'] = $this->serieModel->getAll();
-                    $data['lycees'] = $this->lyceeModel->getAll();
+                    $data['lycees'] = $this->lyceeModel->getAll(); // Bien que le lycée soit en contexte, on pourrait le garder pour l'affichage
                     $this->view('eleves/create', $data);
                 }
             } else {
-                // Repopuler les données pour la vue create
+                // Repopuler les données pour la vue create, y compris le contexte
                 $data['title'] = $this->translate('add_student');
-                $data['annee_scolaire_libelle'] = $activeYear ? $activeYear->libelle : '';
+                $data['annee_scolaire_id'] = $context['annee_scolaire_id'];
+                $data['annee_scolaire_libelle'] = $context['annee_scolaire_libelle'];
+                $data['selected_lycee_id'] = $context['lycee_id'];
+                $data['selected_centre_id'] = $context['centre_id'];
+                $data['selected_centre_nom'] = $context['centre_nom'];
                 $data['series'] = $this->serieModel->getAll();
                 $data['lycees'] = $this->lyceeModel->getAll();
                 $this->view('eleves/create', $data);
             }
         } else {
-            $this->redirect('eleves/create');
+            // Si ce n'est pas POST, rediriger vers la sélection de contexte si le contexte n'est pas défini
+            if (!isset($_SESSION['enroll_context'])) {
+                $this->redirect('eleves/selectContext');
+            } else {
+                $this->redirect('eleves/create'); // ou afficher le formulaire create vide avec le contexte
+            }
         }
     }
 

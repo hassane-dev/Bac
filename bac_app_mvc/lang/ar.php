@@ -387,6 +387,9 @@ return [
     'halls_management_info' => 'سيتم تنفيذ إدارة القاعات لهذا المركز هنا.',
     'manage_assignments' => 'إدارة التعيينات (الثانويات/الشعب)',
     'assignments_management_info' => 'سيتم تنفيذ إدارة التعيينات لهذا المركز هنا.',
+    'centre_code' => 'رمز المركز',
+    'centre_code_desc' => 'مثال: NDJ، ABE، إلخ. يستخدم للرقم التسلسلي.',
+    'centre_code_taken' => 'رمز المركز هذا مستخدم بالفعل.',
     'add_new_hall' => 'إضافة قاعة جديدة',
     'hall_number_name' => 'رقم/اسم القاعة',
     'capacity' => 'السعة',
@@ -402,6 +405,27 @@ return [
     'salle_deleted_successfully' => 'تم حذف القاعة بنجاح.',
     'error_deleting_salle' => 'خطأ أثناء حذف القاعة.',
     'salle_not_found' => 'القاعة غير موجودة.',
+
+    // Pour Eleves (en plus de celles déjà présentes)
+    'select_enrollment_context' => "تحديد سياق التسجيل (السنة، الثانوية)",
+    'continue_to_enrollment' => "متابعة إلى التسجيل",
+    'center_not_assigned_for_lycee_year' => "لم يتم تعيين مركز امتحان لهذه الثانوية للسنة الدراسية النشطة، أو أن الثانوية/المركز ليس له رمز محدد. يرجى التحقق من التعيينات ورموز المراكز.",
+    'enrollment_context_not_set' => "سياق التسجيل (السنة، الثانوية، المركز) غير محدد. يرجى إعادة التحديد.",
+    'center_code_missing_in_context' => "رمز المركز مفقود في سياق التسجيل. تحقق من تكوين المركز.",
+    'unknown_center' => 'مركز غير معروف',
+    'undefined_academic_year' => 'سنة دراسية غير محددة',
+    'undefined_lycee' => 'ثانوية غير محددة',
+    'undefined_center' => 'مركز غير محدد',
+    'change_enrollment_context' => "تغيير سياق التسجيل",
+    'matricule_provisional' => 'الرقم التسلسلي (داخلي/مؤقت)',
+    'matricule_generation_note_form' => "سيتم إنشاء الرقم التسلسلي النهائي (رمزالمركزرمزالشعبةالرقم). أدخل معرفًا فريدًا لهذا التلميذ إذا كان لديك واحد.",
+    'candidate_identity' => 'هوية المترشح',
+    'delete_current_photo_on_save' => "حذف الصورة الحالية (في حال تقديم/التقاط صورة جديدة أو تحديد هذا الخيار)",
+    'matricule_not_editable' => "غير قابل للتعديل",
+    'serie_change_warning' => "تنبيه: تغيير الشعبة بعد إنشاء الرقم التسلسلي الأولي قد يؤدي إلى عدم تطابق إذا لم يتم إعادة إنشاء الرقم التسلسلي.",
+    // 'current_photo' => 'الصورة الحالية', // Déjà défini
+    'unsupported_file_type_image' => "نوع الملف غير مدعوم (صور JPG, PNG, GIF فقط).",
+
 
     // Pour Assignations Centres
     'select_academic_year_for_assignments' => "اختر السنة الدراسية للتعيينات",

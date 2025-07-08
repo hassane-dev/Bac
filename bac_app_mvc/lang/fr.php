@@ -455,6 +455,27 @@ return [
     'edit_lycee' => 'Modifier le Lycée',
     'add_lycee' => 'Ajouter un Lycée',
 
+    // Pour Eleves (en plus de celles déjà présentes)
+    'select_enrollment_context' => "Sélectionner le Contexte d'Enrôlement (Année, Lycée)",
+    'continue_to_enrollment' => "Continuer vers l'enrôlement",
+    'center_not_assigned_for_lycee_year' => "Aucun centre d'examen n'est assigné à ce lycée pour l'année scolaire active, ou le lycée/centre n'a pas de code défini. Veuillez vérifier les assignations et les codes des centres.",
+    'enrollment_context_not_set' => "Le contexte d'enrôlement (année, lycée, centre) n'est pas défini. Veuillez recommencer la sélection.",
+    'center_code_missing_in_context' => "Le code du centre est manquant dans le contexte d'enrôlement. Vérifiez la configuration du centre.",
+    'unknown_center' => 'Centre inconnu',
+    'undefined_academic_year' => 'Année scolaire non définie',
+    'undefined_lycee' => 'Lycée non défini',
+    'undefined_center' => 'Centre non défini',
+    'change_enrollment_context' => "Changer le contexte d'enrôlement",
+    'matricule_provisional' => 'Matricule (Interne/Provisoire)',
+    'matricule_generation_note_form' => "Le matricule final (CodeCentreCodeSerieNuméro) sera généré. Saisir un identifiant unique pour cet élève si vous en avez un.",
+    'candidate_identity' => 'Identité du Candidat',
+    'delete_current_photo_on_save' => "Supprimer la photo actuelle (si une nouvelle est fournie/capturée ou si cette case est cochée)",
+    'matricule_not_editable' => "Non modifiable",
+    'serie_change_warning' => "Attention : Changer la série après la génération du matricule initial peut créer des incohérences si le matricule n'est pas regénéré.",
+    'current_photo' => 'Photo Actuelle', // Répété mais contextuel
+    'unsupported_file_type_image' => "Type de fichier non supporté (images JPG, PNG, GIF uniquement).",
+
+
     // Pour Centres
     'centres_list' => 'Liste des Centres d\'Examen',
     'add_new_centre' => 'Ajouter un nouveau Centre',
@@ -476,6 +497,9 @@ return [
     'halls_management_info' => 'La gestion des salles pour ce centre sera implémentée ici.',
     'manage_assignments' => 'Gérer les Assignations (Lycées/Séries)',
     'assignments_management_info' => 'La gestion des assignations pour ce centre sera implémentée ici.',
+    'centre_code' => 'Code Centre',
+    'centre_code_desc' => 'Ex: NDJ, ABE, etc. Utilisé pour le matricule.',
+    'centre_code_taken' => 'Ce code de centre est déjà utilisé.',
     'add_new_hall' => 'Ajouter une nouvelle salle',
     'hall_number_name' => 'Numéro/Nom de la Salle',
     'capacity' => 'Capacité',

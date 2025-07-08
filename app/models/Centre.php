@@ -19,16 +19,18 @@ class Centre {
     }
 
     public function add($data) {
-        $this->db->query("INSERT INTO centres (nom_centre, description) VALUES (:nom_centre, :description)");
+        $this->db->query("INSERT INTO centres (nom_centre, code_centre, description) VALUES (:nom_centre, :code_centre, :description)");
         $this->db->bind(':nom_centre', $data['nom_centre']);
+        $this->db->bind(':code_centre', $data['code_centre'] ?? null);
         $this->db->bind(':description', $data['description'] ?? null);
         return $this->db->execute();
     }
 
     public function update($id, $data) {
-        $this->db->query("UPDATE centres SET nom_centre = :nom_centre, description = :description WHERE id = :id");
+        $this->db->query("UPDATE centres SET nom_centre = :nom_centre, code_centre = :code_centre, description = :description WHERE id = :id");
         $this->db->bind(':id', (int)$id);
         $this->db->bind(':nom_centre', $data['nom_centre']);
+        $this->db->bind(':code_centre', $data['code_centre'] ?? null);
         $this->db->bind(':description', $data['description'] ?? null);
         return $this->db->execute();
     }
@@ -69,6 +71,26 @@ class Centre {
         }
         $this->db->query($sql);
         $this->db->bind(':nom_centre', $nomCentre);
+        if ($currentId !== null) {
+            $this->db->bind(':current_id', (int)$currentId);
+        }
+        return $this->db->single() ? true : false;
+    }
+
+    /**
+     * Vérifie si un code de centre existe déjà.
+     * @param string $codeCentre
+     * @param int|null $currentId ID du centre actuel à exclure (pour la mise à jour)
+     * @return bool
+     */
+    public function codeCentreExists($codeCentre, $currentId = null) {
+        if (empty($codeCentre)) return false; // Un code vide n'est pas considéré comme "existant" en tant que doublon
+        $sql = "SELECT id FROM centres WHERE code_centre = :code_centre";
+        if ($currentId !== null) {
+            $sql .= " AND id != :current_id";
+        }
+        $this->db->query($sql);
+        $this->db->bind(':code_centre', $codeCentre);
         if ($currentId !== null) {
             $this->db->bind(':current_id', (int)$currentId);
         }

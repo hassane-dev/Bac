@@ -47,14 +47,28 @@ class Eleve {
      * @return bool
      */
     public function add($data) {
+        // Générer numero_sequentiel_serie
+        // Ce numéro est global pour la série dans l'année scolaire
+        $this->db->query("SELECT COALESCE(MAX(numero_sequentiel_serie), 0) as max_seq FROM eleves WHERE annee_scolaire_id = :annee_scolaire_id AND serie_id = :serie_id");
+        $this->db->bind(':annee_scolaire_id', (int)$data['annee_scolaire_id']);
+        $this->db->bind(':serie_id', (int)$data['serie_id']);
+        $max_seq = $this->db->single()->max_seq;
+        $numero_sequentiel = $max_seq + 1;
+
+        // Construire le matricule: CodeCentreCodeSerieNumeroSequentiel
+        // Les codes sont passés par le contrôleur après avoir été récupérés des tables respectives.
+        $matricule = strtoupper(($data['code_centre'] ?? '') . ($data['code_serie'] ?? '') . $numero_sequentiel);
+
         $this->db->query("INSERT INTO eleves (matricule, nom, prenom, date_naissance, sexe, serie_id, lycee_id, annee_scolaire_id, photo,
                                             empreinte1, empreinte2, empreinte3, empreinte4, empreinte5,
-                                            empreinte6, empreinte7, empreinte8, empreinte9, empreinte10, centre_id)
+                                            empreinte6, empreinte7, empreinte8, empreinte9, empreinte10,
+                                            centre_id, numero_sequentiel_serie)
                           VALUES (:matricule, :nom, :prenom, :date_naissance, :sexe, :serie_id, :lycee_id, :annee_scolaire_id, :photo,
                                   :empreinte1, :empreinte2, :empreinte3, :empreinte4, :empreinte5,
-                                  :empreinte6, :empreinte7, :empreinte8, :empreinte9, :empreinte10, :centre_id)");
+                                  :empreinte6, :empreinte7, :empreinte8, :empreinte9, :empreinte10,
+                                  :centre_id, :numero_sequentiel_serie)");
 
-        $this->db->bind(':matricule', $data['matricule']);
+        $this->db->bind(':matricule', $matricule);
         $this->db->bind(':nom', $data['nom']);
         $this->db->bind(':prenom', $data['prenom']);
         $this->db->bind(':date_naissance', $data['date_naissance']);
@@ -63,8 +77,8 @@ class Eleve {
         $this->db->bind(':lycee_id', (int)$data['lycee_id']);
         $this->db->bind(':annee_scolaire_id', (int)$data['annee_scolaire_id']);
         $this->db->bind(':photo', $data['photo'] ?? null);
-        $this->db->bind(':centre_id', isset($data['centre_id']) && !empty($data['centre_id']) ? (int)$data['centre_id'] : null);
-
+        $this->db->bind(':centre_id', (int)$data['centre_id']); // Doit être NOT NULL maintenant
+        $this->db->bind(':numero_sequentiel_serie', $numero_sequentiel);
 
         for ($i = 1; $i <= 10; $i++) {
             $this->db->bind(":empreinte{$i}", $data["empreinte{$i}"] ?? null);
@@ -75,21 +89,33 @@ class Eleve {
 
     /**
      * Modifie un élève existant.
+     * La regénération du matricule et du numero_sequentiel_serie si la série/année change
+     * est complexe et peut avoir des effets de bord. Pour l'instant, on assume que
+     * le matricule et le numero_sequentiel_serie ne sont pas modifiés après création.
+     * Seuls les autres champs informatifs sont mis à jour.
+     * Si une modification de série/année est nécessaire, il vaudrait mieux supprimer et recréer l'élève
+     * pour garantir la cohérence des séquences de matricules.
      * @param int $id
      * @param array $data
      * @return bool
      */
     public function update($id, $data) {
+        // Récupérer l'élève actuel pour le matricule et numero_sequentiel_serie
+        $currentEleve = $this->getById($id);
+        if (!$currentEleve) return false;
+
         $this->db->query("UPDATE eleves SET
-                            matricule = :matricule, nom = :nom, prenom = :prenom, date_naissance = :date_naissance, sexe = :sexe,
-                            serie_id = :serie_id, lycee_id = :lycee_id, annee_scolaire_id = :annee_scolaire_id, photo = :photo,
+                            nom = :nom, prenom = :prenom, date_naissance = :date_naissance, sexe = :sexe,
+                            serie_id = :serie_id, lycee_id = :lycee_id, annee_scolaire_id = :annee_scolaire_id,
+                            photo = :photo,
                             empreinte1 = :empreinte1, empreinte2 = :empreinte2, empreinte3 = :empreinte3, empreinte4 = :empreinte4, empreinte5 = :empreinte5,
                             empreinte6 = :empreinte6, empreinte7 = :empreinte7, empreinte8 = :empreinte8, empreinte9 = :empreinte9, empreinte10 = :empreinte10,
                             centre_id = :centre_id
+                            -- Matricule et numero_sequentiel_serie ne sont pas modifiés ici pour simplicité.
                           WHERE id = :id");
 
         $this->db->bind(':id', (int)$id);
-        $this->db->bind(':matricule', $data['matricule']);
+        // $this->db->bind(':matricule', $data['matricule']); // Ne pas mettre à jour le matricule directement ici
         $this->db->bind(':nom', $data['nom']);
         $this->db->bind(':prenom', $data['prenom']);
         $this->db->bind(':date_naissance', $data['date_naissance']);

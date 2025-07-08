@@ -23,8 +23,10 @@ class CentresController extends Controller {
         $data = [
             'title' => $this->translate('add_centre'),
             'nom_centre' => '',
+            'code_centre' => '',
             'description' => '',
-            'nom_centre_err' => ''
+            'nom_centre_err' => '',
+            'code_centre_err' => ''
         ];
         $this->view('centres/create', $data);
     }
@@ -34,18 +36,22 @@ class CentresController extends Controller {
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $data = [
                 'nom_centre' => trim($_POST['nom_centre']),
+                'code_centre' => strtoupper(trim($_POST['code_centre'] ?? null)),
                 'description' => trim($_POST['description'] ?? null),
                 'title' => $this->translate('add_centre'),
-                'nom_centre_err' => ''
+                'nom_centre_err' => '',
+                'code_centre_err' => ''
             ];
 
-            if (empty($data['nom_centre'])) {
-                $data['nom_centre_err'] = $this->translate('centre_name_required');
-            } elseif ($this->centreModel->nomExists($data['nom_centre'])) {
-                $data['nom_centre_err'] = $this->translate('centre_name_taken');
-            }
+            if (empty($data['nom_centre'])) $data['nom_centre_err'] = $this->translate('centre_name_required');
+            elseif ($this->centreModel->nomExists($data['nom_centre'])) $data['nom_centre_err'] = $this->translate('centre_name_taken');
 
-            if (empty($data['nom_centre_err'])) {
+            if (!empty($data['code_centre']) && $this->centreModel->codeCentreExists($data['code_centre'])) {
+                $data['code_centre_err'] = $this->translate('centre_code_taken');
+            }
+            // Le code centre n'est pas requis pour l'instant, mais s'il est fourni, il doit être unique.
+
+            if (empty($data['nom_centre_err']) && empty($data['code_centre_err'])) {
                 if ($this->centreModel->add($data)) {
                     $_SESSION['message'] = $this->translate('centre_added_successfully');
                     $this->redirect('centres');
@@ -78,11 +84,13 @@ class CentresController extends Controller {
         $data = [
             'id' => $id,
             'nom_centre' => $centre->nom_centre,
+            'code_centre' => $centre->code_centre,
             'description' => $centre->description,
             'title' => $this->translate('edit_centre'),
             'nom_centre_err' => '',
-            'salles' => $salles ?? [], // Pour l'étape suivante
-            // 'assignations' => $assignations ?? [], // Pour l'étape suivante
+            'code_centre_err' => '',
+            'salles' => $salles ?? [],
+            // 'assignations' => $assignations ?? [],
             // 'annees_scolaires' => $this->model('AnneeScolaire')->getAll(),
             // 'lycees' => $this->model('Lycee')->getAll(),
             // 'series' => $this->model('Serie')->getAll(),
@@ -161,18 +169,21 @@ class CentresController extends Controller {
             $data = [
                 'id' => $id,
                 'nom_centre' => trim($_POST['nom_centre']),
+                'code_centre' => strtoupper(trim($_POST['code_centre'] ?? null)),
                 'description' => trim($_POST['description'] ?? null),
-                'title' => $this->translate('edit_centre'), // Pour réaffichage en cas d'erreur
-                'nom_centre_err' => ''
+                'title' => $this->translate('edit_centre'),
+                'nom_centre_err' => '',
+                'code_centre_err' => ''
             ];
 
-            if (empty($data['nom_centre'])) {
-                $data['nom_centre_err'] = $this->translate('centre_name_required');
-            } elseif ($this->centreModel->nomExists($data['nom_centre'], $id)) {
-                $data['nom_centre_err'] = $this->translate('centre_name_taken');
+            if (empty($data['nom_centre'])) $data['nom_centre_err'] = $this->translate('centre_name_required');
+            elseif ($this->centreModel->nomExists($data['nom_centre'], $id)) $data['nom_centre_err'] = $this->translate('centre_name_taken');
+
+            if (!empty($data['code_centre']) && $this->centreModel->codeCentreExists($data['code_centre'], $id)) {
+                $data['code_centre_err'] = $this->translate('centre_code_taken');
             }
 
-            if (empty($data['nom_centre_err'])) {
+            if (empty($data['nom_centre_err']) && empty($data['code_centre_err'])) {
                 if ($this->centreModel->update($id, $data)) {
                     $_SESSION['message'] = $this->translate('centre_updated_successfully');
                     $this->redirect('centres');

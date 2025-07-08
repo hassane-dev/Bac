@@ -422,7 +422,8 @@ return [
     'error_adding_assignment' => "خطأ أثناء إضافة التعيين (تحقق مما إذا كان موجودًا بالفعل).",
     'assignment_deleted_successfully' => 'تم حذف التعيين بنجاح.',
     'error_deleting_assignment' => "خطأ أثناء حذف التعيين.",
-
+    // 'description' => 'الوصف', // Déjà défini globalement
+    // 'back_to_dashboard' => 'العودة إلى لوحة التحكم', // Déjà défini globalement
 
     // Pour TemplatesDocuments
     'document_templates_list' => 'نماذج المستندات',

@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS centres_assignations (
 -- Table: eleves
 CREATE TABLE IF NOT EXISTS eleves (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  matricule VARCHAR(20) UNIQUE NOT NULL,
+  matricule VARCHAR(20) NOT NULL, -- Rendre non unique seul, l'unicité sera par annee_scolaire_id
   nom VARCHAR(100) NOT NULL,
   prenom VARCHAR(100) NOT NULL,
   date_naissance DATE NOT NULL,
@@ -107,7 +107,8 @@ CREATE TABLE IF NOT EXISTS eleves (
   FOREIGN KEY (serie_id) REFERENCES series(id) ON DELETE RESTRICT ON UPDATE CASCADE,
   FOREIGN KEY (centre_id) REFERENCES centres(id) ON DELETE SET NULL ON UPDATE CASCADE, -- Si le centre est supprimé
   FOREIGN KEY (lycee_id) REFERENCES lycees(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-  FOREIGN KEY (annee_scolaire_id) REFERENCES annees_scolaires(id) ON DELETE RESTRICT ON UPDATE CASCADE
+  FOREIGN KEY (annee_scolaire_id) REFERENCES annees_scolaires(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  UNIQUE KEY uk_matricule_annee (matricule, annee_scolaire_id) COMMENT 'Matricule unique par année scolaire'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table: series_matieres

@@ -1,91 +1,65 @@
 <?php
 
-/**
- * Contrôleur de base.
- * Tous les autres contrôleurs hériteront de cette classe.
- */
 abstract class Controller {
-    protected $db; // Instance de la base de données
-    protected static $translations = []; // Stockage des traductions chargées
+    protected $db;
+    protected static $translations = [];
 
     public function __construct() {
-        // S'assurer que config.php est chargé pour les constantes DB_* et APP_ROOT
         if (!defined('APP_ROOT')) {
-            // Ceci est une sécurité, config.php devrait être chargé par public/index.php
-            $configFile = dirname(__DIR__, 2) . '/config.php'; // Remonte de app/core à bac_app_mvc puis config.php
+            $configFile = dirname(__DIR__, 2) . '/config.php';
             if (file_exists($configFile)) {
                 require_once $configFile;
             } else {
-                die("Fichier de configuration introuvable.");
+                die("Fichier de configuration principal introuvable.");
             }
         }
 
         $this->db = new Database();
 
-        // Charger les traductions une seule fois par requête (ou par session de langue)
         if (empty(self::$translations)) {
             self::$translations = $this->loadTranslations();
         }
     }
 
-    /**
-     * Charge un modèle.
-     *
-     * @param string $modelLe Le nom du fichier modèle (ex: 'User' pour User.php)
-     * @return object|false L'instance du modèle ou false si non trouvé.
-     */
     protected function model($modelName) {
         $modelFile = APP_ROOT . '/app/models/' . ucwords($modelName) . '.php';
         if (file_exists($modelFile)) {
             require_once $modelFile;
             $modelClass = ucwords($modelName);
             if (class_exists($modelClass)) {
-                // Passer l'instance de la base de données au modèle
                 return new $modelClass($this->db);
             } else {
                  View::renderError("Classe modèle '$modelClass' non trouvée dans '$modelFile'.");
-                 return false;
+                 return false; // Ou throw exception
             }
         }
         View::renderError("Fichier modèle '$modelFile' non trouvé.");
-        return false;
+        return false; // Ou throw exception
     }
 
-    /**
-     * Charge et affiche une vue.
-     *
-     * @param string $viewPath Le chemin vers le fichier de vue depuis app/views/ (ex: 'home/index')
-     * @param array $data Les données à passer à la vue
-     */
     protected function view($viewPath, $data = []) {
-        // Rendre les traductions et autres données globales disponibles pour toutes les vues
         $data['tr'] = function($key, $params = []) {
             return $this->translate($key, $params);
         };
         $data['current_lang'] = $_SESSION['lang'] ?? DEFAULT_LANG;
         $data['app_url'] = APP_URL;
-        $data['isLoggedIn'] = $this->isLoggedIn(); // Rendre le statut de connexion disponible aux vues
+        $data['isLoggedIn'] = $this->isLoggedIn();
         if ($this->isLoggedIn()) {
             $data['current_username'] = $_SESSION['username'] ?? '';
             $data['current_user_role_id'] = $_SESSION['user_role_id'] ?? null;
+            // Pourrait être utile de passer le nom du rôle aussi
+            // $data['current_user_role_name'] = $_SESSION['user_role_name'] ?? '';
         }
-
 
         View::render($viewPath, $data);
     }
 
-    /**
-     * Charge les fichiers de langue.
-     * @return array
-     */
     private function loadTranslations() {
-        // Gestion du changement de langue via paramètre GET 'lang'
         if (isset($_GET['lang']) && in_array($_GET['lang'], AVAILABLE_LANGS)) {
             $_SESSION['lang'] = $_GET['lang'];
-            // Rediriger pour nettoyer l'URL du paramètre lang (optionnel mais propre)
-            // Attention: ceci peut causer des boucles si mal géré ou si la page actuelle est POST
+            // Redirection pour nettoyer l'URL. Attention si la page est POST.
             // $currentUrl = strtok($_SERVER["REQUEST_URI"],'?');
-            // header("Location: " . $currentUrl);
+            // header("Location: " . APP_URL . $currentUrl); // Construire URL complète
             // exit;
         }
 
@@ -95,7 +69,6 @@ abstract class Controller {
         if (file_exists($langFile)) {
             return include $langFile;
         }
-        // Fallback vers la langue par défaut si le fichier de la langue actuelle n'existe pas
         if ($currentLang !== DEFAULT_LANG) {
             $defaultLangFile = APP_ROOT . '/lang/' . DEFAULT_LANG . '.php';
             if (file_exists($defaultLangFile)) {
@@ -103,16 +76,9 @@ abstract class Controller {
                 return include $defaultLangFile;
             }
         }
-        return []; // Retourner un tableau vide si aucun fichier de langue n'est trouvé
+        return [];
     }
 
-    /**
-     * Obtient une chaîne de traduction.
-     *
-     * @param string $key La clé de la chaîne de traduction.
-     * @param array $params Paramètres à remplacer dans la chaîne (ex: ['name' => 'John']).
-     * @return string La chaîne traduite ou la clé si non trouvée.
-     */
     protected function translate($key, $params = []) {
         $text = self::$translations[$key] ?? $key;
         foreach ($params as $paramKey => $paramValue) {
@@ -121,60 +87,22 @@ abstract class Controller {
         return $text;
     }
 
-    /**
-     * Redirige vers une URL interne.
-     * @param string $urlSegment Segment d'URL (ex: 'users/login').
-     */
     protected function redirect($urlSegment) {
         View::redirect($urlSegment);
     }
 
-    /**
-     * Récupère les données JSON envoyées dans le corps d'une requête POST.
-     * @return mixed Les données décodées ou null si invalide.
-     */
-    protected function getJsonInput() {
-        $input = file_get_contents('php://input');
-        return json_decode($input, true);
-    }
-
-    /**
-     * Envoie une réponse JSON.
-     * @param mixed $data Les données à envoyer.
-     * @param int $statusCode Le code de statut HTTP.
-     */
-    protected function jsonResponse($data, $statusCode = 200) {
-        http_response_code($statusCode);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data);
-        exit;
-    }
-
-    /**
-     * Vérifie si un utilisateur est connecté.
-     * @return bool
-     */
     protected function isLoggedIn() {
         return isset($_SESSION['user_id']);
     }
 
-    /**
-     * Vérifie si l'utilisateur connecté a une accréditation spécifique.
-     * @param string $requiredAccreditation Le libellé de l'accréditation requise.
-     * @return bool
-     */
     protected function userHasPermission($requiredAccreditation) {
         if (!$this->isLoggedIn()) {
             return false;
         }
-
-        // L'admin (role_id 1) a toutes les permissions.
-        if (isset($_SESSION['user_role_id']) && $_SESSION['user_role_id'] == 1) {
+        if (isset($_SESSION['user_role_id']) && $_SESSION['user_role_id'] == 1) { // Admin (ID 1) a tout
             return true;
         }
-
-        // Charger les accréditations de l'utilisateur si pas déjà en session
-        if (!isset($_SESSION['user_accreditations'])) {
+        if (!isset($_SESSION['user_accreditations'])) { // Charger si pas en session
             $roleModel = $this->model('Role');
             if ($roleModel && isset($_SESSION['user_role_id'])) {
                 $accreditationsObjects = $roleModel->getAccreditations($_SESSION['user_role_id']);
@@ -187,7 +115,7 @@ abstract class Controller {
     }
 }
 
-// Création d'un HomeController basique si non existant
+// Création HomeController et sa vue par défaut
 if (!file_exists(APP_ROOT . '/app/controllers/HomeController.php')) {
     $homeControllerContent = "<?php\n\n";
     $homeControllerContent .= "class HomeController extends Controller {\n";
@@ -196,12 +124,22 @@ if (!file_exists(APP_ROOT . '/app/controllers/HomeController.php')) {
     $homeControllerContent .= "    }\n\n";
     $homeControllerContent .= "    public function index() {\n";
     $homeControllerContent .= "        if (\$this->isLoggedIn()) {\n";
-    $homeControllerContent .= "            \$this->redirect('dashboard');\n";
+    $homeControllerContent .= "            \$this->redirect('dashboard/index');\n"; // Assurez-vous que DashboardController::index existe
     $homeControllerContent .= "        } else {\n";
     $homeControllerContent .= "            \$this->redirect('auth/login');\n";
     $homeControllerContent .= "        }\n";
     $homeControllerContent .= "    }\n";
     $homeControllerContent .= "}\n";
     file_put_contents(APP_ROOT . '/app/controllers/HomeController.php', $homeControllerContent);
+}
+
+if (!file_exists(APP_ROOT . '/app/views/home/index.php')) {
+    $homeViewContent = "<?php // Minimal home view - user should be redirected by HomeController ?>\n";
+    $homeViewContent .= "<h1><?php echo \$tr('welcome_title'); ?></h1>\n";
+    $homeViewContent .= "<p><?php echo \$tr('app_name'); ?></p>\n";
+    if (!is_dir(APP_ROOT . '/app/views/home')) {
+        mkdir(APP_ROOT . '/app/views/home', 0755, true);
+    }
+    file_put_contents(APP_ROOT . '/app/views/home/index.php', $homeViewContent);
 }
 ?>

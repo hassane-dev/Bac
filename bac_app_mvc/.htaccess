@@ -2,25 +2,24 @@
   RewriteEngine On
 
   # Rediriger tout le trafic qui n'est pas déjà dans /public/ vers le dossier public/
-  # Sauf si c'est une requête pour un fichier ou dossier existant à la racine (peu probable pour cette app)
+  # Sauf si c'est une requête pour un fichier ou dossier existant à la racine de bac_app_mvc
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/public/
   RewriteRule ^(.*)$ public/$1 [L,QSA]
 
-  # Si la requête est pour la racine et n'a pas été redirigée vers public (au cas où la condition ci-dessus ne matche pas)
-  # et que public/index.php existe, alors rediriger vers public/
-  # Ceci est une sécurité supplémentaire.
+  # Si la requête est pour la racine de bac_app_mvc (ex: http://localhost/bac_app_mvc/)
+  # et que /public/index.php existe, rediriger vers /public/
+  # Cela assure que même l'accès direct à la racine de bac_app_mvc est géré par public/
   RewriteCond %{REQUEST_URI} ^/$
-  RewriteCond %{DOCUMENT_ROOT}/public/index.php -f
+  RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}public/index.php -f [OR]
+  RewriteCond %{REQUEST_FILENAME}/public/index.php -f
   RewriteRule ^$ public/ [L]
 
 </IfModule>
 
-# Empêcher le listage des répertoires si DirectoryIndex n'est pas trouvé
 Options -Indexes
 
-# Empêcher l'accès direct aux fichiers sensibles
 <FilesMatch "\.(sql|env|log|ini|bak|config|md)$">
     Order Allow,Deny
     Deny from all
@@ -37,9 +36,13 @@ Options -Indexes
     Order Allow,Deny
     Deny from all
 </Files>
+# Pour les fichiers dans app/core, si jamais le .htaccess de app/ n'est pas pris en compte
 <FilesMatch "^(Controller\.php|Database\.php|Router\.php|View\.php)$">
-  Require all denied
+  <If "%{REQUEST_URI} =~ m#/app/core/#">
+    Require all denied
+  </If>
 </FilesMatch>
+
 <IfModule mod_autoindex.c>
-    IndexIgnore .git* .env bac_app.sql config.php
+    IndexIgnore .git* .env bac_app.sql config.php app lang lib templates
 </IfModule>

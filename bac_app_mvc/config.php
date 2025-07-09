@@ -9,33 +9,38 @@ define('DB_PASS', '');
 // Racine de l'application
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
 $host = $_SERVER['HTTP_HOST'];
-// SCRIPT_NAME est le chemin du script actuel (index.php dans le dossier public)
-// Pour obtenir la base de l'URL de l'application, nous devons retirer '/public/index.php' ou juste '/index.php' si à la racine du docroot
-// et ensuite retirer '/public' si l'application est servie depuis bac_app_mvc/public/
-// La configuration .htaccess à la racine de bac_app_mvc redirige vers public/,
-// donc SCRIPT_NAME pourrait être /bac_app_mvc/public/index.php ou /public/index.php si bac_app_mvc est le docroot.
 
-// Chemin de base de l'application URL-wise.
-// Si l'application est à la racine du serveur (ex: http://localhost/public/index.php), SCRIPT_NAME est /index.php (après redirection vers public)
-// Si l'application est dans un sous-dossier (ex: http://localhost/mon_projet/public/index.php), SCRIPT_NAME est /mon_projet/public/index.php
-// Nous voulons que APP_URL soit http://localhost/ ou http://localhost/mon_projet/
-$app_path = dirname($_SERVER['SCRIPT_NAME']); // Devrait donner /bac_app_mvc/public ou /public
-if ($app_path === '/public' || substr($app_path, -7) === '/public') {
-    $app_path = substr($app_path, 0, -6); // Retire /public pour obtenir la base de l'application
-}
-if ($app_path === '\\' || $app_path === '/') { // Si à la racine du serveur web
-    $app_path = '';
+$script_path = dirname($_SERVER['SCRIPT_NAME']);
+// Si SCRIPT_NAME est /bac_app_mvc/public/index.php, dirname est /bac_app_mvc/public
+// Si SCRIPT_NAME est /public/index.php, dirname est /public
+// Si SCRIPT_NAME est /index.php (racine du serveur), dirname est /
+
+// On veut que APP_URL soit http://localhost/bac_app_mvc ou http://localhost si à la racine
+$app_url_segment = '';
+if (basename($script_path) === 'public') {
+    $app_url_segment = dirname($script_path);
+} else {
+    // Cas où l'application pourrait être directement à la racine du docroot et .htaccess redirige
+    // ou si la structure est différente, ce cas est moins probable avec la structure cible.
+    $app_url_segment = $script_path;
 }
 
-define('APP_URL', $protocol . $host . $app_path);
+// Normaliser le segment pour éviter les doubles slashs ou les slashs de fin inutiles
+$app_url_segment = rtrim($app_url_segment, '/');
+if ($app_url_segment === '\\') { // Cas où dirname retourne juste '\' sur Windows si à la racine
+    $app_url_segment = '';
+}
+
+
+define('APP_URL', $protocol . $host . $app_url_segment);
 
 
 // Chemin absolu vers la racine du projet sur le serveur (bac_app_mvc)
-define('APP_ROOT', dirname(__DIR__)); // dirname(__FILE__) dans config.php, puis dirname() pour remonter d'un niveau
+define('APP_ROOT', __DIR__); // __DIR__ dans config.php pointe vers bac_app_mvc/
 
 // Paramètres linguistiques par défaut
 define('DEFAULT_LANG', 'fr');
-define('AVAILABLE_LANGS', ['fr', 'ar']); // Doit correspondre aux noms de fichiers dans /lang sans .php
+define('AVAILABLE_LANGS', ['fr', 'ar']);
 
 // Affichage des erreurs (à mettre à false en production)
 define('SHOW_ERRORS', true);

@@ -254,15 +254,4 @@ SELECT id, 10, 9.5, 10, 12, 14, 16, 18 FROM annees_scolaires WHERE libelle = '20
 
 
 SET FOREIGN_KEY_CHECKS=1;
-
 -- End of SQL Script
--- To import this file into MySQL:
--- mysql -u username -p database_name < bac_app.sql
--- Or use a GUI tool like phpMyAdmin.
--- Make sure the database 'bac_app' (or as defined in config.php) exists before importing.
--- CREATE DATABASE IF NOT EXISTS bac_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- User creation and privileges (example, adjust as needed for security)
--- CREATE USER 'bac_user'@'localhost' IDENTIFIED BY 'your_strong_password';
--- GRANT ALL PRIVILEGES ON bac_app.* TO 'bac_user'@'localhost';
--- FLUSH PRIVILEGES;
